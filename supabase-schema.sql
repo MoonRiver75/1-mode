@@ -37,6 +37,24 @@ create table if not exists habit_completions (
   unique(profile_id, log_date, habit_id)
 );
 
+create table if not exists activities (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid references profiles(id) on delete cascade,
+  client_id text not null,
+  title text not null,
+  detail text,
+  block text check (block in ('mañana', 'trabajo', 'tarde', 'post-6', 'noche')),
+  category text check (category in ('fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby')),
+  minutes integer default 15,
+  time_of_day time,
+  essential boolean default false,
+  heavy_day boolean default false,
+  tip text,
+  custom boolean default true,
+  created_at timestamptz default now(),
+  unique(profile_id, client_id)
+);
+
 create table if not exists sleep_logs (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid references profiles(id) on delete cascade,
@@ -103,5 +121,16 @@ create table if not exists rescue_prompts (
   problem text not null,
   step_one text,
   completed boolean default false,
+  created_at timestamptz default now()
+);
+
+create table if not exists saved_resources (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid references profiles(id) on delete cascade,
+  source text check (source in ('GitHub', 'Hacker News', 'arXiv')),
+  title text not null,
+  url text not null,
+  meta text,
+  converted_to_activity boolean default false,
   created_at timestamptz default now()
 );

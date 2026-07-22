@@ -1,16 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type Tab = 'hoy' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
-type Block = 'mañana' | 'trabajo' | 'noche'
+type Tab = 'hoy' | 'actividades' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
+type Block = 'mañana' | 'trabajo' | 'tarde' | 'post-6' | 'noche'
+type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby'
+type ResourceSource = 'GitHub' | 'Hacker News' | 'arXiv'
 
-type Habit = {
+type Activity = {
   id: string
   block: Block
   title: string
   detail: string
-  minutes?: number
-  essential?: boolean
+  minutes: number
+  category: Category
+  essential: boolean
+  heavyDay: boolean
+  time?: string
+  tip?: string
+  custom?: boolean
+}
+
+type Resource = {
+  id: string
+  title: string
+  url: string
+  source: ResourceSource
+  meta: string
 }
 
 type DailyState = {
@@ -26,23 +41,41 @@ type DailyState = {
   workout: 'gym' | 'casa' | 'caminar' | 'descanso'
   wins: string[]
   rescueProblem: string
+  activities: Activity[]
+  storagePersisted: 'desconocido' | 'activo' | 'básico' | 'no-soportado'
+  resources: Resource[]
 }
 
-const habits: Habit[] = [
-  { id: 'water', block: 'mañana', title: 'Agua y respiración', detail: '7 minutos. Inhala 4, sostén 7, exhala 8.', minutes: 7, essential: true },
-  { id: 'deep-ai', block: 'mañana', title: 'IA profunda', detail: 'Código, matemáticas o paper. Sin navegación libre.', minutes: 45, essential: true },
-  { id: 'move-am', block: 'mañana', title: 'Movimiento ligero', detail: 'Flexiones, movilidad o caminata corta.', minutes: 15, essential: true },
-  { id: 'lut', block: 'trabajo', title: 'La única tarea', detail: 'Define la acción que hará que el día valga.', minutes: 5, essential: true },
-  { id: 'ai-extension', block: 'trabajo', title: 'IA como extensión', detail: 'Automatiza o mejora una tarea repetitiva.', minutes: 15 },
-  { id: 'walk-food', block: 'trabajo', title: 'Caminata consciente', detail: '10 minutos después de comer.', minutes: 10, essential: true },
-  { id: 'protein', block: 'noche', title: 'Cena proteica', detail: 'Simple, temprana y suficiente.', minutes: 30, essential: true },
-  { id: 'review-code', block: 'noche', title: 'Revisión de IA', detail: 'Repetición, notas o código de la mañana.', minutes: 30 },
-  { id: 'three-wins', block: 'noche', title: 'Tres victorias', detail: 'Cuerpo, trabajo e IA. Una línea basta.', minutes: 5, essential: true },
-  { id: 'screens-off', block: 'noche', title: 'Pantallas fuera', detail: '10:15 PM. El sueño protege el sistema.', minutes: 1, essential: true },
+type HistoryEntry = DailyState & { progress: number; completedCount: number }
+
+const scientificRoutine: Activity[] = [
+  { id: 'chrono-alarm', block: 'mañana', title: 'Levantarse sin snooze', detail: 'Cortar sueño fragmentado y niebla mental.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '06:00', tip: 'No uses repetición. El sueño fragmentado aumenta la niebla mental.' },
+  { id: 'chrono-sun', block: 'mañana', title: 'Luz solar directa', detail: 'Salir 10 minutos, incluso si está nublado.', minutes: 10, category: 'sueño', essential: true, heavyDay: true, time: '06:05', tip: 'La luz natural frena melatonina y sincroniza el reloj biológico.' },
+  { id: 'chrono-water', block: 'mañana', title: 'Agua con pizca de sal', detail: '400-500 ml al despertar.', minutes: 2, category: 'nutrición', essential: true, heavyDay: true, time: '06:15', tip: 'Durante la noche pierdes agua por respiración y sudor.' },
+  { id: 'chrono-mobility', block: 'mañana', title: 'Movilidad dinámica', detail: 'Sin ejercicio intenso en ayunas.', minutes: 10, category: 'fitness', essential: true, heavyDay: true, time: '06:20', tip: 'Activa el cuerpo sin elevar cortisol de más.' },
+  { id: 'chrono-protein', block: 'mañana', title: 'Desayuno proteico', detail: '30-40g proteína y grasas saludables.', minutes: 20, category: 'nutrición', essential: false, heavyDay: false, time: '07:00', tip: 'Prioriza proteína para saciedad y dopamina estable.' },
+  { id: 'chrono-nsdr', block: 'tarde', title: 'NSDR o micro-siesta', detail: '10-20 minutos. Nunca más de 25.', minutes: 20, category: 'mente', essential: false, heavyDay: false, time: '14:00', tip: 'Si trabajas, haz respiración profunda 10 minutos.' },
+  { id: 'chrono-walk', block: 'tarde', title: 'Movimiento anti-bajón', detail: 'Caminar 5 min o 10 sentadillas.', minutes: 5, category: 'fitness', essential: true, heavyDay: true, time: '15:00', tip: 'Reactivar flujo sanguíneo ayuda contra el bajón de las 3 PM.' },
+  { id: 'chrono-deep-task', block: 'tarde', title: 'Tarea cognitiva compleja', detail: 'Programación, análisis o informes.', minutes: 120, category: 'trabajo', essential: false, heavyDay: false, time: '14:00', tip: 'La tarde puede ser un segundo pico analítico.' },
+  { id: 'chrono-warm-light', block: 'post-6', title: 'Luz cálida', detail: 'Cambiar iluminación a ámbar.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '18:30', tip: 'Indica al cerebro que el día termina.' },
+  { id: 'chrono-blue-filter', block: 'post-6', title: 'Filtro azul', detail: 'Modo nocturno en dispositivos.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '18:35', tip: 'Ideal: teléfono cargando lejos.' },
+  { id: 'chrono-screenless', block: 'post-6', title: 'Hobby sin pantalla', detail: 'Leer, hablar, caminar o actividad manual.', minutes: 60, category: 'hobby', essential: false, heavyDay: false, time: '19:00', tip: 'Reduce rumiación mental.' },
+  { id: 'chrono-shower', block: 'noche', title: 'Ducha caliente', detail: '10 minutos para facilitar enfriamiento corporal.', minutes: 10, category: 'sueño', essential: false, heavyDay: false, time: '21:15', tip: 'Al salir, el cuerpo baja temperatura y facilita dormir.' },
+  { id: 'chrono-dump', block: 'noche', title: 'Brain dump', detail: 'Escribir preocupaciones y pendientes.', minutes: 5, category: 'mente', essential: true, heavyDay: true, time: '21:30', tip: 'Saca la ansiedad de la cabeza al papel.' },
+  { id: 'chrono-breath', block: 'noche', title: 'Respiración 4-7-8', detail: '3 ciclos antes de dormir.', minutes: 3, category: 'mente', essential: true, heavyDay: true, time: '22:00', tip: 'Activa el sistema parasimpático.' },
+  { id: 'chrono-bed', block: 'noche', title: 'Acostarse en oscuridad', detail: 'Regularidad por encima de perfección.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '22:30', tip: 'La consistencia horaria es la regla de oro.' },
+]
+
+const baseActivities: Activity[] = [
+  { id: 'deep-ai', block: 'mañana', title: 'IA profunda', detail: 'Código, matemáticas o paper. Sin navegación libre.', minutes: 45, category: 'ia', essential: true, heavyDay: false, time: '06:30', tip: 'La incomodidad de no entender es parte del entrenamiento.' },
+  { id: 'lut', block: 'trabajo', title: 'La única tarea', detail: 'Define la acción que hará que el día valga.', minutes: 5, category: 'trabajo', essential: true, heavyDay: true, time: '08:15', tip: 'Antes de apagar incendios, decide qué importa.' },
+  { id: 'ai-extension', block: 'trabajo', title: 'IA como extensión', detail: 'Automatiza o mejora una tarea repetitiva.', minutes: 15, category: 'ia', essential: false, heavyDay: false, time: '11:00', tip: 'Si se repite dos veces, merece prompt o script.' },
+  { id: 'gym-home', block: 'post-6', title: 'Entreno gym/casa', detail: 'Fuerza, caminata o rutina corta.', minutes: 45, category: 'fitness', essential: true, heavyDay: false, time: '18:45', tip: 'En día pesado bastan 10 minutos.' },
+  { id: 'three-wins', block: 'noche', title: 'Tres victorias', detail: 'Cuerpo, trabajo e IA. Una línea basta.', minutes: 5, category: 'mente', essential: true, heavyDay: true, time: '21:45', tip: 'La gratitud por el esfuerzo arraiga identidad.' },
 ]
 
 const defaultState: DailyState = {
-  date: new Date().toISOString().slice(0, 10),
+  date: todayKey(),
   completed: {},
   sleepHours: 7.5,
   anxiety: 3,
@@ -54,10 +87,14 @@ const defaultState: DailyState = {
   workout: 'gym',
   wins: ['', '', ''],
   rescueProblem: '',
+  activities: [...scientificRoutine, ...baseActivities],
+  storagePersisted: 'desconocido',
+  resources: [],
 }
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'hoy', label: 'Hoy' },
+  { id: 'actividades', label: 'Ritual' },
   { id: 'cuerpo', label: 'Cuerpo' },
   { id: 'mente', label: 'Mente' },
   { id: 'ia', label: 'IA' },
@@ -66,33 +103,50 @@ const tabs: { id: Tab; label: string }[] = [
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('hoy')
-  const [state, setState] = useState<DailyState>(() => {
-    const saved = localStorage.getItem('one-mode-state')
-    return saved ? { ...defaultState, ...JSON.parse(saved) } : defaultState
-  })
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [state, setState] = useState<DailyState>(() => loadState())
 
-  useEffect(() => {
-    localStorage.setItem('one-mode-state', JSON.stringify(state))
-  }, [state])
-
-  const visibleHabits = useMemo(
-    () => (state.heavyDay ? habits.filter((habit) => habit.essential) : habits),
-    [state.heavyDay],
+  const visibleActivities = useMemo(
+    () => (state.heavyDay ? state.activities.filter((activity) => activity.heavyDay || activity.essential) : state.activities),
+    [state.activities, state.heavyDay],
   )
 
-  const completedCount = visibleHabits.filter((habit) => state.completed[habit.id]).length
-  const progress = Math.round((completedCount / visibleHabits.length) * 100)
-  const deepMinutes = visibleHabits
-    .filter((habit) => state.completed[habit.id] && habit.id === 'deep-ai')
-    .reduce((sum, habit) => sum + (habit.minutes ?? 0), state.deepWork)
+  const completedCount = visibleActivities.filter((activity) => state.completed[activity.id]).length
+  const progress = visibleActivities.length ? Math.round((completedCount / visibleActivities.length) * 100) : 0
+  const deepMinutes = visibleActivities
+    .filter((activity) => state.completed[activity.id] && activity.category === 'ia')
+    .reduce((sum, activity) => sum + activity.minutes, state.deepWork)
+  const insights = getInsights(state, progress, deepMinutes, history)
 
-  const insights = getInsights(state, progress, deepMinutes)
+  useEffect(() => {
+    persistState(state, progress, completedCount).then(setHistory).catch(() => undefined)
+  }, [state, progress, completedCount])
 
-  function toggleHabit(id: string) {
+  useEffect(() => {
+    loadHistory().then(setHistory).catch(() => undefined)
+  }, [])
+
+  function toggleActivity(id: string) {
     setState((current) => ({
       ...current,
       completed: { ...current.completed, [id]: !current.completed[id] },
     }))
+  }
+
+  function upsertActivity(activity: Activity) {
+    setState((current) => ({
+      ...current,
+      activities: current.activities.some((item) => item.id === activity.id)
+        ? current.activities.map((item) => (item.id === activity.id ? activity : item))
+        : [activity, ...current.activities],
+    }))
+  }
+
+  function deleteActivity(id: string) {
+    setState((current) => {
+      const { [id]: _removed, ...completed } = current.completed
+      return { ...current, completed, activities: current.activities.filter((activity) => activity.id !== id) }
+    })
   }
 
   function updateWin(index: number, value: string) {
@@ -101,6 +155,15 @@ function App() {
       wins[index] = value
       return { ...current, wins }
     })
+  }
+
+  async function requestPersistentStorage() {
+    if (!navigator.storage?.persist) {
+      setState((current) => ({ ...current, storagePersisted: 'no-soportado' }))
+      return
+    }
+    const granted = await navigator.storage.persist()
+    setState((current) => ({ ...current, storagePersisted: granted ? 'activo' : 'básico' }))
   }
 
   return (
@@ -117,44 +180,31 @@ function App() {
       </header>
 
       <section className="page-card page-entry">
-        {activeTab === 'hoy' && (
-          <TodayView
-            completedCount={completedCount}
-            progress={progress}
-            state={state}
-            habits={visibleHabits}
-            insights={insights}
-            onToggle={toggleHabit}
-            setState={setState}
-            updateWin={updateWin}
-          />
-        )}
-        {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} />}
+        {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} />}
+        {activeTab === 'actividades' && <ActivitiesView activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
+        {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} history={history} />}
         {activeTab === 'mente' && <MindView state={state} setState={setState} insights={insights} />}
         {activeTab === 'ia' && <AiView state={state} setState={setState} deepMinutes={deepMinutes} />}
-        {activeTab === 'progreso' && <ProgressView progress={progress} state={state} completedCount={completedCount} insights={insights} />}
+        {activeTab === 'progreso' && <ProgressView progress={progress} state={state} completedCount={completedCount} insights={insights} history={history} />}
       </section>
 
       <nav className="bottom-nav" aria-label="Navegación principal">
-        {tabs.map((tab) => (
-          <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} type="button" onClick={() => setActiveTab(tab.id)}>
-            {tab.label}
-          </button>
-        ))}
+        {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} type="button" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
       </nav>
     </main>
   )
 }
 
-function TodayView({ completedCount, progress, state, habits, insights, onToggle, setState, updateWin }: {
+function TodayView({ completedCount, progress, state, activities, insights, onToggle, setState, updateWin, requestPersistentStorage }: {
   completedCount: number
   progress: number
   state: DailyState
-  habits: Habit[]
+  activities: Activity[]
   insights: string[]
   onToggle: (id: string) => void
   setState: React.Dispatch<React.SetStateAction<DailyState>>
   updateWin: (index: number, value: string) => void
+  requestPersistentStorage: () => void
 }) {
   return (
     <>
@@ -162,56 +212,89 @@ function TodayView({ completedCount, progress, state, habits, insights, onToggle
       <div className="hero-grid">
         <div className="progress-ring" style={{ '--progress': `${progress * 3.6}deg` } as React.CSSProperties}>
           <strong>{progress}%</strong>
-          <span>{completedCount}/{habits.length}</span>
+          <span>{completedCount}/{activities.length}</span>
         </div>
         <div>
           <p className="caption">Ritmo del día</p>
           <h2>{state.heavyDay ? 'Solo lo esencial permanece.' : 'Un día. Una versión mejor.'}</h2>
-          <p className="soft-copy">Despertar sugerido: 6:15 AM. Pantallas fuera: 10:15 PM. Dormir: 10:45 PM.</p>
+          <p className="soft-copy">Despertar sugerido: 6:15 AM. Luz natural temprano. Pantallas cálidas después de las 6 PM. Dormir: 10:45 PM.</p>
         </div>
       </div>
 
+      <StorageCard status={state.storagePersisted} requestPersistentStorage={requestPersistentStorage} />
       <InsightCard text={insights[0]} />
 
-      {(['mañana', 'trabajo', 'noche'] as Block[]).map((block) => (
+      {(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => (
         <section className="ritual-block" key={block}>
-          <p className="caption">{block}</p>
-          {habits.filter((habit) => habit.block === block).map((habit) => (
-            <button key={habit.id} className={`habit-row ${state.completed[habit.id] ? 'done' : ''}`} type="button" onClick={() => onToggle(habit.id)}>
-              <span className="checkmark">{state.completed[habit.id] ? '✓' : ''}</span>
-              <span>
-                <strong>{habit.title}</strong>
-                <small>{habit.detail}</small>
-              </span>
-              {habit.minutes && <em>{habit.minutes}m</em>}
-            </button>
-          ))}
+          <p className="caption">{blockLabel(block)}</p>
+          {activities.filter((activity) => activity.block === block).map((activity) => <ActivityRow key={activity.id} activity={activity} done={Boolean(state.completed[activity.id])} onToggle={onToggle} />)}
         </section>
       ))}
 
       <section className="journal-card">
         <p className="caption">Tres victorias</p>
-        {['Cuerpo', 'Trabajo', 'IA'].map((label, index) => (
-          <label key={label}>
-            <span>{label}</span>
-            <input value={state.wins[index]} placeholder="Una línea basta" onChange={(event) => updateWin(index, event.target.value)} />
-          </label>
-        ))}
+        {['Cuerpo', 'Trabajo', 'IA'].map((label, index) => <label key={label}><span>{label}</span><input value={state.wins[index]} placeholder="Una línea basta" onChange={(event) => updateWin(index, event.target.value)} /></label>)}
       </section>
 
-      <button className="primary-action" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: true }))}>
-        Activar día pesado
-      </button>
+      <div className="split-actions">
+        <button className="primary-action" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: true }))}>Día pesado</button>
+        <button className="secondary-action" type="button" onClick={() => setState((current) => ({ ...current, completed: {} }))}>Limpiar hoy</button>
+      </div>
     </>
   )
 }
 
-function BodyView({ state, setState }: { state: DailyState; setState: React.Dispatch<React.SetStateAction<DailyState>> }) {
+function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void }) {
+  const [draft, setDraft] = useState<Activity>(newActivity())
+
+  function save() {
+    if (!draft.title.trim()) return
+    upsertActivity({ ...draft, title: draft.title.trim(), detail: draft.detail.trim() || 'Actividad personal.', custom: true })
+    setDraft(newActivity())
+  }
+
+  return (
+    <>
+      <SectionTitle caption="Ritual" title="Tus actividades" />
+      <section className="form-card">
+        <p className="caption">Nueva actividad</p>
+        <label><span>Nombre</span><input value={draft.title} placeholder="Ej. Estudiar embeddings" onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
+        <label><span>Detalle</span><input value={draft.detail} placeholder="Qué harás exactamente" onChange={(event) => setDraft({ ...draft, detail: event.target.value })} /></label>
+        <div className="two-columns">
+          <label><span>Bloque</span><select value={draft.block} onChange={(event) => setDraft({ ...draft, block: event.target.value as Block })}>{(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => <option key={block} value={block}>{blockLabel(block)}</option>)}</select></label>
+          <label><span>Minutos</span><input type="number" min="1" value={draft.minutes} onChange={(event) => setDraft({ ...draft, minutes: Number(event.target.value) })} /></label>
+        </div>
+        <div className="two-columns">
+          <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{(['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby'] as Category[]).map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+          <label><span>Hora</span><input type="time" value={draft.time ?? ''} onChange={(event) => setDraft({ ...draft, time: event.target.value })} /></label>
+        </div>
+        <label className="inline-check"><input type="checkbox" checked={draft.heavyDay} onChange={(event) => setDraft({ ...draft, heavyDay: event.target.checked })} /> Cuenta en día pesado</label>
+        <button className="primary-action" type="button" onClick={save}>Guardar actividad</button>
+      </section>
+
+      <section className="ritual-block">
+        <p className="caption">Plantilla científica activa</p>
+        <p className="soft-copy">La regla de oro: consistencia horaria antes que perfección. Puedes borrar, editar o mezclar estos pasos con tus propios rituales.</p>
+      </section>
+
+      {activities.map((activity) => (
+        <article className="editable-row" key={activity.id}>
+          <div><p className="caption">{blockLabel(activity.block)} · {activity.category}</p><strong>{activity.title}</strong><small>{activity.detail}</small></div>
+          <div className="row-actions"><button type="button" onClick={() => setDraft(activity)}>Editar</button><button type="button" onClick={() => deleteActivity(activity.id)}>Borrar</button></div>
+        </article>
+      ))}
+    </>
+  )
+}
+
+function BodyView({ state, setState, history }: { state: DailyState; setState: React.Dispatch<React.SetStateAction<DailyState>>; history: HistoryEntry[] }) {
+  const avgSteps = average(history.map((entry) => entry.steps)) || state.steps
   return (
     <>
       <SectionTitle caption="Cuerpo" title="Atleta en recuperación" />
       <div className="metric-grid">
         <Metric label="Pasos" value={state.steps.toLocaleString('es-MX')} helper="Meta inicial: 8,000" />
+        <Metric label="Promedio" value={Math.round(avgSteps).toLocaleString('es-MX')} helper="Historial local" />
         <Metric label="Entreno" value={state.workout} helper="Gym y casa cuentan" />
       </div>
       <div className="form-card">
@@ -236,6 +319,7 @@ function MindView({ state, setState, insights }: { state: DailyState; setState: 
         <label><span>Sueño</span><input type="range" min="4" max="9" step="0.5" value={state.sleepHours} onChange={(event) => setState((current) => ({ ...current, sleepHours: Number(event.target.value) }))} /></label>
         <label><span>Ansiedad</span><input type="range" min="1" max="5" value={state.anxiety} onChange={(event) => setState((current) => ({ ...current, anxiety: Number(event.target.value) }))} /></label>
         <label><span>Energía</span><input type="range" min="1" max="5" value={state.energy} onChange={(event) => setState((current) => ({ ...current, energy: Number(event.target.value) }))} /></label>
+        <label><span>Fin de trabajo</span><input type="time" value={state.workEnd} onChange={(event) => setState((current) => ({ ...current, workEnd: event.target.value }))} /></label>
       </div>
       <InsightCard text={insights[1] ?? insights[0]} />
     </>
@@ -243,47 +327,92 @@ function MindView({ state, setState, insights }: { state: DailyState; setState: 
 }
 
 function AiView({ state, setState, deepMinutes }: { state: DailyState; setState: React.Dispatch<React.SetStateAction<DailyState>>; deepMinutes: number }) {
-  const rescueSteps = state.rescueProblem.trim()
-    ? ['Define la versión más pequeña del problema.', 'Abre editor o libreta. Escribe 5 líneas.', 'Marca un error, una duda o un siguiente paso.']
-    : []
+  const [query, setQuery] = useState('machine learning agents')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const rescueSteps = state.rescueProblem.trim() ? ['Define la versión más pequeña del problema.', 'Abre editor o libreta. Escribe 5 líneas.', 'Marca un error, una duda o un siguiente paso.'] : []
+
+  async function searchWeb() {
+    setLoading(true)
+    setError('')
+    try {
+      const resources = await fetchFreeResources(query)
+      setState((current) => ({ ...current, resources }))
+    } catch {
+      setError('No se pudo traer información. Revisa conexión e intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function resourceToActivity(resource: Resource) {
+    setState((current) => ({
+      ...current,
+      activities: [{ id: `resource-${Date.now()}`, block: 'mañana', title: `Estudiar: ${resource.title.slice(0, 42)}`, detail: resource.url, minutes: 25, category: 'ia', essential: false, heavyDay: false, custom: true, tip: `Fuente: ${resource.source}` }, ...current.activities],
+    }))
+  }
 
   return (
     <>
       <SectionTitle caption="IA" title="Aprendiz de por vida" />
       <div className="metric-grid">
         <Metric label="Zona profunda" value={`${deepMinutes}m`} helper="Código o matemáticas" />
-        <Metric label="Regla" value="sin web" helper="Solo editor y papel" />
+        <Metric label="Fuentes" value="3" helper="GitHub, HN, arXiv" />
       </div>
       <section className="rescue-card">
         <p className="caption">No sé por dónde empezar</p>
         <textarea value={state.rescueProblem} placeholder="El problema más pequeño que tengo es..." onChange={(event) => setState((current) => ({ ...current, rescueProblem: event.target.value }))} />
-        {rescueSteps.length > 0 && rescueSteps.map((step, index) => <p key={step} className="rescue-step">{index + 1}. {step}</p>)}
+        {rescueSteps.map((step, index) => <p key={step} className="rescue-step">{index + 1}. {step}</p>)}
       </section>
-      <InsightCard text="La confusión no es una señal de fracaso. Es la puerta de entrada al aprendizaje real." />
+      <section className="form-card">
+        <p className="caption">Biblioteca web gratis</p>
+        <label><span>Búsqueda</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="agents, rag, computer vision..." /></label>
+        <button className="primary-action" type="button" onClick={searchWeb}>{loading ? 'Buscando...' : 'Traer recursos'}</button>
+        {error && <p className="error-copy">{error}</p>}
+      </section>
+      {state.resources.map((resource) => (
+        <article className="resource-card" key={resource.id}>
+          <p className="caption">{resource.source}</p>
+          <a href={resource.url} target="_blank" rel="noreferrer">{resource.title}</a>
+          <small>{resource.meta}</small>
+          <button type="button" onClick={() => resourceToActivity(resource)}>Convertir en actividad</button>
+        </article>
+      ))}
+      <InsightCard text="La web trae señales. El sistema decide la siguiente acción concreta." />
     </>
   )
 }
 
-function ProgressView({ progress, state, completedCount, insights }: { progress: number; state: DailyState; completedCount: number; insights: string[] }) {
+function ProgressView({ progress, state, completedCount, insights, history }: { progress: number; state: DailyState; completedCount: number; insights: string[]; history: HistoryEntry[] }) {
+  const week = history.slice(-7)
+  const avgProgress = average(week.map((entry) => entry.progress)) || progress
+  const avgSleep = average(week.map((entry) => entry.sleepHours)) || state.sleepHours
+  const weakBlock = getWeakBlock(state)
   return (
     <>
       <SectionTitle caption="Progreso" title="Sistema sobre motivación" />
       <div className="metric-grid">
         <Metric label="Hoy" value={`${progress}%`} helper={`${completedCount} acciones`} />
+        <Metric label="Semana" value={`${Math.round(avgProgress)}%`} helper="Promedio local" />
+        <Metric label="Sueño" value={`${avgSleep.toFixed(1)} h`} helper="Promedio reciente" />
         <Metric label="Día pesado" value={state.heavyDay ? 'activo' : 'no'} helper="Sin culpa" />
-        <Metric label="Pasos" value={String(state.steps)} helper="Proceso visible" />
+        <Metric label="Bloque débil" value={blockLabel(weakBlock)} helper="Ajuste sugerido" />
+        <Metric label="Recursos" value={String(state.resources.length)} helper="Biblioteca IA" />
       </div>
       <section className="achievement-list">
-        {['El Estoico Madrugador', 'El 1% Diario', 'No Dos Veces'].map((name, index) => (
-          <div key={name} className="achievement">
-            <span>{index + 1}</span>
-            <div><strong>{name}</strong><small>Inspirado en Clear, Sharma y Fridman.</small></div>
-          </div>
-        ))}
+        {['El Estoico Madrugador', 'El 1% Diario', 'No Dos Veces'].map((name, index) => <div key={name} className="achievement"><span>{index + 1}</span><div><strong>{name}</strong><small>Inspirado en Clear, Sharma y Fridman.</small></div></div>)}
       </section>
       <InsightCard text={insights[2] ?? 'La identidad no se define por un error, sino por cómo respondes al error.'} />
     </>
   )
+}
+
+function ActivityRow({ activity, done, onToggle }: { activity: Activity; done: boolean; onToggle: (id: string) => void }) {
+  return <button className={`habit-row ${done ? 'done' : ''}`} type="button" onClick={() => onToggle(activity.id)}><span className="checkmark">{done ? '✓' : ''}</span><span><strong>{activity.title}</strong><small>{activity.time ? `${activity.time} · ` : ''}{activity.detail}</small>{activity.tip && <small className="tip-copy">{activity.tip}</small>}</span><em>{activity.minutes}m</em></button>
+}
+
+function StorageCard({ status, requestPersistentStorage }: { status: DailyState['storagePersisted']; requestPersistentStorage: () => void }) {
+  return <aside className="storage-card"><div><p className="caption">Guardado</p><p>{storageText(status)}</p></div><button type="button" onClick={requestPersistentStorage}>Permitir</button></aside>
 }
 
 function SectionTitle({ caption, title }: { caption: string; title: string }) {
@@ -298,16 +427,135 @@ function InsightCard({ text }: { text: string }) {
   return <aside className="insight-card"><p className="caption">Observación</p><p>{text}</p></aside>
 }
 
-function getInsights(state: DailyState, progress: number, deepMinutes: number) {
+function getInsights(state: DailyState, progress: number, deepMinutes: number, history: HistoryEntry[]) {
   const insights = []
-  if (state.sleepHours < 7) insights.push('Dormiste poco. Hoy gana quien conserva energía: entrenamiento corto, cena simple y pantallas fuera temprano.')
+  const week = history.slice(-7)
+  const avgProgress = average(week.map((entry) => entry.progress))
+  if (state.sleepHours < 7 && state.anxiety >= 4) insights.push('Sueño bajo y ansiedad alta. Activa día pesado: luz natural, caminata corta, cena simple y brain dump.')
+  if (state.sleepHours < 7) insights.push('Dormiste poco. Hoy no necesitas heroicidad; necesitas proteger el ritmo circadiano.')
   if (state.anxiety >= 4) insights.push('La ansiedad está alta. No negocies con ella: agua, respiración y una caminata de 10 minutos.')
   if (state.energy <= 2) insights.push('La energía está baja. Reduce la carga, pero conserva la identidad: una acción pequeña también cuenta.')
   if (state.workEnd > '18:45' || state.heavyDay) insights.push('Trabajaste más de lo normal. Día pesado recomendado: solo lo esencial permanece.')
+  if (state.steps < 4000) insights.push('Tus pasos están bajos. La medicina mínima de hoy: 10 minutos caminando después de comer.')
   if (deepMinutes === 0) insights.push('La IA todavía no recibió atención profunda. Abre editor o papel durante 15 minutos.')
+  if (avgProgress && avgProgress < 45) insights.push('La semana muestra demasiada fricción. Borra o reduce actividades; el sistema debe ser inevitable.')
   if (progress >= 80) insights.push('El sistema está respondiendo. Protege este ritmo; no agregues dificultad hoy.')
   insights.push('No necesitas motivación perfecta. Necesitas que el siguiente paso sea inevitable.')
   return insights
+}
+
+async function fetchFreeResources(query: string): Promise<Resource[]> {
+  const safeQuery = encodeURIComponent(query.trim() || 'machine learning')
+  const [github, hn, arxiv] = await Promise.allSettled([fetchGitHub(safeQuery), fetchHackerNews(safeQuery), fetchArxiv(safeQuery)])
+  return [github, hn, arxiv].flatMap((result) => (result.status === 'fulfilled' ? result.value : [])).slice(0, 12)
+}
+
+async function fetchGitHub(query: string): Promise<Resource[]> {
+  const response = await fetch(`https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=4`)
+  const data = await response.json()
+  return (data.items ?? []).map((item: { id: number; full_name: string; html_url: string; stargazers_count: number; language?: string }) => ({ id: `gh-${item.id}`, title: item.full_name, url: item.html_url, source: 'GitHub' as const, meta: `${item.stargazers_count} estrellas · ${item.language ?? 'código'}` }))
+}
+
+async function fetchHackerNews(query: string): Promise<Resource[]> {
+  const response = await fetch(`https://hn.algolia.com/api/v1/search?query=${query}&tags=story&hitsPerPage=4`)
+  const data = await response.json()
+  return (data.hits ?? []).map((item: { objectID: string; title?: string; story_title?: string; url?: string; points?: number }) => ({ id: `hn-${item.objectID}`, title: item.title ?? item.story_title ?? 'Historia técnica', url: item.url ?? `https://news.ycombinator.com/item?id=${item.objectID}`, source: 'Hacker News' as const, meta: `${item.points ?? 0} puntos` }))
+}
+
+async function fetchArxiv(query: string): Promise<Resource[]> {
+  const response = await fetch(`https://export.arxiv.org/api/query?search_query=all:${query}&start=0&max_results=4`)
+  const xml = await response.text()
+  const doc = new DOMParser().parseFromString(xml, 'text/xml')
+  return Array.from(doc.querySelectorAll('entry')).map((entry, index) => ({ id: `arxiv-${index}-${entry.querySelector('id')?.textContent ?? Date.now()}`, title: entry.querySelector('title')?.textContent?.replace(/\s+/g, ' ').trim() ?? 'Paper', url: entry.querySelector('id')?.textContent ?? 'https://arxiv.org', source: 'arXiv' as const, meta: entry.querySelector('published')?.textContent?.slice(0, 10) ?? 'paper' }))
+}
+
+function loadState(): DailyState {
+  try {
+    const saved = localStorage.getItem('one-mode-state')
+    const parsed = saved ? JSON.parse(saved) : {}
+    const mergedActivities = mergeActivities(parsed.activities ?? [])
+    return { ...defaultState, ...parsed, activities: mergedActivities, resources: parsed.resources ?? [] }
+  } catch {
+    return defaultState
+  }
+}
+
+function mergeActivities(saved: Activity[]) {
+  const map = new Map([...defaultState.activities, ...saved].map((activity) => [activity.id, activity]))
+  return Array.from(map.values())
+}
+
+async function persistState(state: DailyState, progress: number, completedCount: number) {
+  localStorage.setItem('one-mode-state', JSON.stringify(state))
+  const entry: HistoryEntry = { ...state, progress, completedCount }
+  await idbPut('daily-history', entry.date, entry)
+  return loadHistory()
+}
+
+async function loadHistory(): Promise<HistoryEntry[]> {
+  const records = await idbAll<HistoryEntry>('daily-history')
+  return records.sort((a, b) => a.date.localeCompare(b.date)).slice(-30)
+}
+
+function idbOpen(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('one-mode-db', 1)
+    request.onupgradeneeded = () => request.result.createObjectStore('daily-history')
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function idbPut(store: string, key: string, value: unknown) {
+  const db = await idbOpen()
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(store, 'readwrite')
+    transaction.objectStore(store).put(value, key)
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error)
+  })
+}
+
+async function idbAll<T>(store: string): Promise<T[]> {
+  const db = await idbOpen()
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(store, 'readonly').objectStore(store).getAll()
+    request.onsuccess = () => resolve(request.result as T[])
+    request.onerror = () => reject(request.error)
+  })
+}
+
+function newActivity(): Activity {
+  return { id: `custom-${Date.now()}`, block: 'mañana', title: '', detail: '', minutes: 15, category: 'ia', essential: false, heavyDay: false, time: '06:30', custom: true }
+}
+
+function getWeakBlock(state: DailyState): Block {
+  const blocks: Block[] = ['mañana', 'trabajo', 'tarde', 'post-6', 'noche']
+  return blocks.map((block) => {
+    const list = state.activities.filter((activity) => activity.block === block)
+    const done = list.filter((activity) => state.completed[activity.id]).length
+    return { block, ratio: list.length ? done / list.length : 1 }
+  }).sort((a, b) => a.ratio - b.ratio)[0]?.block ?? 'noche'
+}
+
+function blockLabel(block: Block) {
+  return ({ mañana: 'Mañana', trabajo: 'Trabajo', tarde: 'Tarde', 'post-6': 'Post-6 PM', noche: 'Noche' })[block]
+}
+
+function storageText(status: DailyState['storagePersisted']) {
+  if (status === 'activo') return 'Guardado persistente activo en este dispositivo.'
+  if (status === 'básico') return 'Guardado local básico. El navegador puede limpiarlo si falta espacio.'
+  if (status === 'no-soportado') return 'Este navegador no permite pedir persistencia, pero se guarda localmente.'
+  return 'Tus datos se guardan en este dispositivo. Puedes pedir almacenamiento persistente.'
+}
+
+function average(values: number[]) {
+  const filtered = values.filter((value) => Number.isFinite(value))
+  return filtered.length ? filtered.reduce((sum, value) => sum + value, 0) / filtered.length : 0
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 function formatDate() {

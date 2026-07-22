@@ -98,7 +98,7 @@ h2 {
   line-height: 1.3;
 }
 
-.seal-button, .primary-action {
+.seal-button, .primary-action, .secondary-action {
   border: 0.5px solid rgba(44, 42, 41, 0.3);
   border-radius: 4px;
   background: transparent;
@@ -110,7 +110,7 @@ h2 {
 
 .seal-button { padding: 10px 12px; color: var(--stone); }
 
-.seal-button:active, .primary-action:active, .habit-row:active { opacity: 0.8; }
+.seal-button:active, .primary-action:active, .secondary-action:active, .habit-row:active { opacity: 0.8; }
 
 .page-card {
   position: relative;
@@ -160,7 +160,7 @@ h2 {
 
 .soft-copy { margin: 12px 0 0; color: var(--stone); line-height: 1.8; }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list {
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .resource-card {
   margin: 20px 0;
   padding: 20px;
   border-radius: 8px;
@@ -201,6 +201,7 @@ h2 {
 
 .habit-row strong { display: block; font-weight: 500; letter-spacing: 1.2px; }
 .habit-row small, .metric-card small, .achievement small { display: block; color: var(--stone); line-height: 1.5; }
+.tip-copy { margin-top: 4px; font-style: italic; }
 .habit-row em { color: var(--stone); font-family: var(--mono); font-size: 11px; font-style: normal; }
 .habit-row.done strong { color: var(--moss); }
 .habit-row.done .checkmark { border-color: var(--moss); background: rgba(122, 139, 122, 0.12); }
@@ -242,6 +243,21 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
   text-transform: uppercase;
 }
 
+.secondary-action {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 32px;
+  background: transparent;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.split-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .section-title { margin-bottom: 24px; }
 
 .metric-grid {
@@ -268,6 +284,94 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
 
 .sliders input { accent-color: var(--terracotta); }
 
+.storage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(232, 226, 213, 0.72);
+}
+
+.storage-card p:last-child {
+  margin: 0;
+  color: var(--stone);
+}
+
+.storage-card button, .resource-card button, .row-actions button {
+  border: 0;
+  border-bottom: 0.5px solid var(--terracotta);
+  background: transparent;
+  color: var(--terracotta);
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.inline-check {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  color: var(--stone);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.inline-check input {
+  width: auto;
+  accent-color: var(--terracotta);
+}
+
+.editable-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 0.5px solid var(--divider);
+}
+
+.editable-row strong, .resource-card a {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 1.1px;
+  text-decoration: none;
+}
+
+.editable-row small, .resource-card small {
+  display: block;
+  color: var(--stone);
+}
+
+.row-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.resource-card a {
+  margin-bottom: 8px;
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.resource-card button {
+  margin-top: 14px;
+}
+
+.error-copy {
+  color: var(--terracotta);
+}
+
 .rescue-step {
   margin: 12px 0 0;
   padding-top: 12px;
@@ -291,7 +395,7 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
   left: 50%;
   bottom: 14px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   width: min(calc(100% - 28px), 432px);
   transform: translateX(-50%);
   border: 0.5px solid rgba(255,255,255,0.4);
@@ -308,8 +412,8 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
   background: transparent;
   color: var(--stone);
   cursor: pointer;
-  font-size: 11px;
-  letter-spacing: 1px;
+  font-size: 10px;
+  letter-spacing: 0.8px;
 }
 
 .bottom-nav button.active { color: var(--terracotta); }
@@ -331,4 +435,10 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
   .app-shell { max-width: 920px; }
   .page-card { padding: 32px; }
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 380px) {
+  .bottom-nav button { font-size: 9px; letter-spacing: 0.2px; }
+  .hero-grid { grid-template-columns: 1fr; }
+  .split-actions, .two-columns { grid-template-columns: 1fr; }
 }

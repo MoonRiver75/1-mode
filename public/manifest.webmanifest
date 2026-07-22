@@ -2,14 +2,15 @@
   "name": "1 MODE - El Método del 1%",
   "short_name": "1 MODE",
   "description": "Checklist inteligente para hábitos, fitness, IA y superación personal.",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#F4F1EA",
   "theme_color": "#F4F1EA",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

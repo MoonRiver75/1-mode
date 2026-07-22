@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="72" fill="#F4F1EA"/>
+  <circle cx="366" cy="130" r="34" fill="#A0522D"/>
+  <text x="84" y="292" fill="#2C2A29" font-family="Georgia, serif" font-size="112" letter-spacing="8">1</text>
+  <text x="166" y="292" fill="#2C2A29" font-family="Georgia, serif" font-size="64" letter-spacing="8">MODE</text>
+  <path d="M92 348H420" stroke="#D1CABF" stroke-width="4" stroke-linecap="round"/>
+</svg>

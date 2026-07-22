@@ -9,9 +9,13 @@ Subtítulo: `El Método del 1%`.
 - Checklist diario dividido en mañana, trabajo y noche.
 - Actividades personalizadas: crear, editar y borrar rituales.
 - Plantilla científica de cronobiología: luz solar, hidratación, movilidad, proteína, NSDR, luz cálida y rutina nocturna.
+- Plantilla `Modo Supervivencia`: diseñada para ansiedad, poco tiempo, comida emocional y baja energía al final del día.
+- Plan B de antojos: sustitutos mecánicos para snacks, dulce y comer por estrés.
+- Reglas semanales y adaptación progresiva por semanas.
 - Modo `Día pesado` para días con exceso de trabajo.
 - Dashboards de cuerpo, mente, IA y progreso.
 - Sistema inteligente de reglas con recomendaciones según sueño, ansiedad, energía y cumplimiento.
+- Reglas locales para detectar llegada a casa peligrosa, desayuno omitido, caminata omitida y ansiedad alta.
 - Modo rescate: `No sé por dónde empezar`.
 - Persistencia local con `localStorage` + historial en `IndexedDB`.
 - Solicitud de almacenamiento persistente con `navigator.storage.persist()` cuando el navegador lo permite.

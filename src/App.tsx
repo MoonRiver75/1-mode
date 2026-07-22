@@ -48,6 +48,44 @@ type DailyState = {
 
 type HistoryEntry = DailyState & { progress: number; completedCount: number }
 
+const survivalRoutine: Activity[] = [
+  { id: 'survival-breathe', block: 'mañana', title: 'Respirar sin móvil', detail: 'Sentarse en la cama y respirar hondo 3 veces.', minutes: 2, category: 'mente', essential: true, heavyDay: true, time: '07:00', tip: 'No mirar el móvil al despertar baja la fricción mental del día.' },
+  { id: 'survival-water', block: 'mañana', title: 'Vaso de agua preparado', detail: '400 ml de agua con pizca de sal marina.', minutes: 2, category: 'nutrición', essential: true, heavyDay: true, time: '07:05', tip: 'Hidratación y electrolitos reducen señales físicas que se confunden con ansiedad.' },
+  { id: 'survival-light', block: 'mañana', title: 'Luz en ventana', detail: '2 minutos de luz natural, aunque esté nublado.', minutes: 2, category: 'sueño', essential: true, heavyDay: true, time: '07:10', tip: 'La luz ayuda a cortar melatonina residual y estabilizar energía.' },
+  { id: 'survival-breakfast', block: 'mañana', title: 'Desayuno antiansiedad', detail: '2 huevos duros + puñado de nueces.', minutes: 15, category: 'nutrición', essential: true, heavyDay: true, time: '07:15', tip: 'Proteína y grasa reducen picos de hambre y antojos tempranos.' },
+  { id: 'survival-kit', block: 'mañana', title: 'Kit de rescate laboral', detail: 'Manzana verde, almendras y botella de 1 litro.', minutes: 5, category: 'nutrición', essential: true, heavyDay: true, time: '07:30', tip: 'Preparar comida antes del estrés elimina decisiones impulsivas.' },
+  { id: 'survival-water-work', block: 'trabajo', title: 'Rellenar botella cada hora', detail: 'Levantarse 2 minutos a llenar agua.', minutes: 2, category: 'trabajo', essential: true, heavyDay: true, time: '08:30', tip: 'Sed, ansiedad y hambre emocional se sienten parecido.' },
+  { id: 'survival-lunch', block: 'trabajo', title: 'Comida fuera del escritorio', detail: 'Proteína + verdura primero; solo mitad de arroz o papa.', minutes: 30, category: 'nutrición', essential: true, heavyDay: true, time: '13:00', tip: 'El orden de alimentos ayuda a controlar glucosa y saciedad.' },
+  { id: 'survival-3pm', block: 'tarde', title: 'Ataque 3 PM', detail: 'Manzana + almendras + 10 sentadillas en baño.', minutes: 5, category: 'fitness', essential: true, heavyDay: true, time: '15:30', tip: 'Fibra, grasa y movimiento cortan el bajón sin azúcar.' },
+  { id: 'survival-before-home', block: 'post-6', title: 'Escudo antes de salir', detail: 'Yogur griego natural o almendras antes de irte.', minutes: 3, category: 'nutrición', essential: true, heavyDay: true, time: '18:00', tip: 'Llegar sin hambre reduce delivery y atracón.' },
+  { id: 'survival-walk-home', block: 'post-6', title: 'Caminar antes de entrar', detail: '15 minutos alrededor de la manzana.', minutes: 15, category: 'fitness', essential: true, heavyDay: true, time: '18:30', tip: 'Esta caminata decide si estudias o caes al sofá.' },
+  { id: 'survival-shower', block: 'post-6', title: 'Ducha de contraste', detail: '2 min caliente + 30 s fría al final.', minutes: 5, category: 'mente', essential: false, heavyDay: false, time: '18:45', tip: 'Un cambio térmico suave ayuda a cortar ansiedad acumulada.' },
+  { id: 'survival-dinner', block: 'noche', title: 'Cena antiatracón', detail: 'Proteína + verduras frescas o congeladas.', minutes: 20, category: 'nutrición', essential: true, heavyDay: true, time: '19:30', tip: 'Brócoli o coliflor congelada al microondas: bajo esfuerzo, alta saciedad.' },
+  { id: 'survival-study', block: 'noche', title: 'Pomodoro para ansiosos', detail: '2 ciclos: 25 min estudio + 5 min descanso activo.', minutes: 60, category: 'ia', essential: false, heavyDay: false, time: '20:00', tip: 'Para al terminar. La consistencia vale más que exprimir dopamina.' },
+  { id: 'survival-phone-out', block: 'noche', title: 'Móvil fuera', detail: 'Cargar el teléfono fuera de la habitación.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '22:00', tip: 'Menos luz, menos ansiedad subconsciente.' },
+  { id: 'survival-dump', block: 'noche', title: 'Cuaderno de descarga', detail: 'Escribir preocupaciones sin filtro.', minutes: 5, category: 'mente', essential: true, heavyDay: true, time: '22:10', tip: 'Vaciar la cabeza en papel reduce rumiación nocturna.' },
+  { id: 'survival-breath-night', block: 'noche', title: 'Respiración 4-2-6', detail: 'Inhala 4, mantén 2, exhala 6. Cinco veces.', minutes: 3, category: 'mente', essential: true, heavyDay: true, time: '22:20', tip: 'Exhalar más largo activa el freno del sistema nervioso.' },
+  { id: 'survival-sleep', block: 'noche', title: 'Dormir sí o sí', detail: 'Luz apagada. Descanso pasivo también cuenta.', minutes: 480, category: 'sueño', essential: true, heavyDay: true, time: '23:00', tip: 'Dormir regula hambre y antojos del día siguiente.' },
+]
+
+const emergencyPlan = [
+  { craving: 'Snacks crocantes', action: 'Pepino en rodajas con limón y sal.', reason: 'Crujiente, salado, volumen alto y casi sin calorías.' },
+  { craving: 'Dulce o helado', action: 'Hielo picado o cubos de hielo lentamente.', reason: 'Frío y masticación bajan urgencia oral en minutos.' },
+  { craving: 'Comer por estrés', action: 'Cronómetro de 10 minutos antes de decidir.', reason: 'El pico de hambre emocional suele bajar si no lo alimentas al instante.' },
+]
+
+const weeklyRules = [
+  'Cero azúcares añadidos antes de las 6 PM.',
+  'Caminar 15 minutos antes de entrar a casa.',
+  'Cumplir 5 de 7 días gana. Si fallas, reinicias sin culpa.',
+]
+
+const progressivePlan = [
+  'Semana 1: huevos en desayuno + caminata de 15 min al llegar. Ignora lo demás.',
+  'Semana 2: añade kit de rescate + cena proteica.',
+  'Semana 3: añade 1 hora Pomodoro. No más.',
+]
+
 const scientificRoutine: Activity[] = [
   { id: 'chrono-alarm', block: 'mañana', title: 'Levantarse sin snooze', detail: 'Cortar sueño fragmentado y niebla mental.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '06:00', tip: 'No uses repetición. El sueño fragmentado aumenta la niebla mental.' },
   { id: 'chrono-sun', block: 'mañana', title: 'Luz solar directa', detail: 'Salir 10 minutos, incluso si está nublado.', minutes: 10, category: 'sueño', essential: true, heavyDay: true, time: '06:05', tip: 'La luz natural frena melatonina y sincroniza el reloj biológico.' },
@@ -87,7 +125,7 @@ const defaultState: DailyState = {
   workout: 'gym',
   wins: ['', '', ''],
   rescueProblem: '',
-  activities: [...scientificRoutine, ...baseActivities],
+  activities: [...survivalRoutine, ...scientificRoutine, ...baseActivities],
   storagePersisted: 'desconocido',
   resources: [],
 }
@@ -273,8 +311,8 @@ function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activi
       </section>
 
       <section className="ritual-block">
-        <p className="caption">Plantilla científica activa</p>
-        <p className="soft-copy">La regla de oro: consistencia horaria antes que perfección. Puedes borrar, editar o mezclar estos pasos con tus propios rituales.</p>
+        <p className="caption">Plantillas activas</p>
+        <p className="soft-copy">Modo Supervivencia está primero: desayuno simple, kit de rescate, caminata antes de entrar a casa y sueño sin móvil. La regla: hábitos de uno en uno.</p>
       </section>
 
       {activities.map((activity) => (
@@ -322,6 +360,7 @@ function MindView({ state, setState, insights }: { state: DailyState; setState: 
         <label><span>Fin de trabajo</span><input type="time" value={state.workEnd} onChange={(event) => setState((current) => ({ ...current, workEnd: event.target.value }))} /></label>
       </div>
       <InsightCard text={insights[1] ?? insights[0]} />
+      <EmergencyPlan />
     </>
   )
 }
@@ -402,8 +441,33 @@ function ProgressView({ progress, state, completedCount, insights, history }: { 
       <section className="achievement-list">
         {['El Estoico Madrugador', 'El 1% Diario', 'No Dos Veces'].map((name, index) => <div key={name} className="achievement"><span>{index + 1}</span><div><strong>{name}</strong><small>Inspirado en Clear, Sharma y Fridman.</small></div></div>)}
       </section>
+      <section className="rule-card">
+        <p className="caption">Reglas semanales</p>
+        {weeklyRules.map((rule) => <p key={rule}>{rule}</p>)}
+      </section>
+      <section className="rule-card">
+        <p className="caption">Adaptación progresiva</p>
+        {progressivePlan.map((step) => <p key={step}>{step}</p>)}
+      </section>
       <InsightCard text={insights[2] ?? 'La identidad no se define por un error, sino por cómo respondes al error.'} />
     </>
+  )
+}
+
+function EmergencyPlan() {
+  return (
+    <section className="emergency-card">
+      <p className="caption">Plan B · comida emocional</p>
+      <h2>Cuando gane la ansiedad</h2>
+      <p className="soft-copy">No luches con fuerza de voluntad. Cambia la mecánica del impulso durante 10 minutos.</p>
+      {emergencyPlan.map((item) => (
+        <article className="emergency-row" key={item.craving}>
+          <strong>{item.craving}</strong>
+          <span>{item.action}</span>
+          <small>{item.reason}</small>
+        </article>
+      ))}
+    </section>
   )
 }
 
@@ -432,11 +496,14 @@ function getInsights(state: DailyState, progress: number, deepMinutes: number, h
   const week = history.slice(-7)
   const avgProgress = average(week.map((entry) => entry.progress))
   if (state.sleepHours < 7 && state.anxiety >= 4) insights.push('Sueño bajo y ansiedad alta. Activa día pesado: luz natural, caminata corta, cena simple y brain dump.')
+  if (state.anxiety >= 4 && state.workEnd >= '18:00') insights.push('Llegada a casa peligrosa. Come yogur o almendras antes de salir, camina 15 minutos antes de entrar y luego ducha corta.')
   if (state.sleepHours < 7) insights.push('Dormiste poco. Hoy no necesitas heroicidad; necesitas proteger el ritmo circadiano.')
   if (state.anxiety >= 4) insights.push('La ansiedad está alta. No negocies con ella: agua, respiración y una caminata de 10 minutos.')
   if (state.energy <= 2) insights.push('La energía está baja. Reduce la carga, pero conserva la identidad: una acción pequeña también cuenta.')
   if (state.workEnd > '18:45' || state.heavyDay) insights.push('Trabajaste más de lo normal. Día pesado recomendado: solo lo esencial permanece.')
   if (state.steps < 4000) insights.push('Tus pasos están bajos. La medicina mínima de hoy: 10 minutos caminando después de comer.')
+  if (!state.completed['survival-breakfast']) insights.push('La base de supervivencia hoy es el desayuno antiansiedad. Huevos o proteína primero; todo lo demás puede esperar.')
+  if (!state.completed['survival-walk-home'] && state.workEnd >= '18:00') insights.push('No entres directo a casa si vienes ansioso. La caminata de 15 minutos es el interruptor del día.')
   if (deepMinutes === 0) insights.push('La IA todavía no recibió atención profunda. Abre editor o papel durante 15 minutos.')
   if (avgProgress && avgProgress < 45) insights.push('La semana muestra demasiada fricción. Borra o reduce actividades; el sistema debe ser inevitable.')
   if (progress >= 80) insights.push('El sistema está respondiendo. Protege este ritmo; no agregues dificultad hoy.')

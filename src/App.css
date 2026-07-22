@@ -160,7 +160,7 @@ h2 {
 
 .soft-copy { margin: 12px 0 0; color: var(--stone); line-height: 1.8; }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .resource-card {
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .resource-card, .emergency-card, .rule-card {
   margin: 20px 0;
   padding: 20px;
   border-radius: 8px;
@@ -366,6 +366,36 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
 
 .resource-card button {
   margin-top: 14px;
+}
+
+.emergency-card h2 {
+  margin-bottom: 10px;
+}
+
+.emergency-row {
+  padding: 14px 0;
+  border-top: 0.5px solid var(--divider);
+}
+
+.emergency-row strong, .emergency-row span, .emergency-row small, .rule-card p {
+  display: block;
+}
+
+.emergency-row span {
+  margin: 4px 0;
+  color: var(--terracotta);
+  letter-spacing: 1px;
+}
+
+.emergency-row small {
+  color: var(--stone);
+}
+
+.rule-card p:not(.caption) {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--divider);
+  color: var(--stone);
 }
 
 .error-copy {

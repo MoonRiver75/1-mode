@@ -217,7 +217,7 @@ function App() {
         </button>
       </header>
 
-      <section className="page-card page-entry">
+      <section className="page-card page-entry" key={activeTab}>
         {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} />}
         {activeTab === 'actividades' && <ActivitiesView activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
         {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} history={history} />}

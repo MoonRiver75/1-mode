@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#F4F1EA"/>
-  <circle cx="47" cy="16" r="5" fill="#A0522D"/>
-  <text x="12" y="39" fill="#2C2A29" font-family="Georgia, serif" font-size="18" letter-spacing="1">1</text>
-  <text x="25" y="39" fill="#2C2A29" font-family="Georgia, serif" font-size="10" letter-spacing="1">MODE</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="1 MODE">
+  <rect width="64" height="64" rx="12" fill="#FDFDFD"/>
+  <path d="M14 52H50L44 44H20Z" fill="#213D94"/>
+  <path d="M26 16H38V44H26Z" fill="#121212"/>
+  <path d="M38 12L50 24H38Z" fill="#45B8D1"/>
+  <path d="M14 22L26 12V24H14Z" fill="#DF3636"/>
+  <path d="M26 12H38V16H26Z" fill="#9A7EBF"/>
 </svg>

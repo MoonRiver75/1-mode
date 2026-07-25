@@ -1,7 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="72" fill="#F4F1EA"/>
-  <circle cx="366" cy="130" r="34" fill="#A0522D"/>
-  <text x="84" y="292" fill="#2C2A29" font-family="Georgia, serif" font-size="112" letter-spacing="8">1</text>
-  <text x="166" y="292" fill="#2C2A29" font-family="Georgia, serif" font-size="64" letter-spacing="8">MODE</text>
-  <path d="M92 348H420" stroke="#D1CABF" stroke-width="4" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="1 MODE tangram icon">
+  <rect width="512" height="512" rx="96" fill="#FDFDFD"/>
+  <path d="M96 416H384L336 352H144Z" fill="#213D94"/>
+  <path d="M208 128H304V352H208Z" fill="#121212"/>
+  <path d="M304 96L384 176H304Z" fill="#45B8D1"/>
+  <path d="M128 160L208 96V176H128Z" fill="#DF3636"/>
+  <path d="M208 96H304V128H208Z" fill="#9A7EBF"/>
+  <path d="M304 288L352 352H304Z" fill="#009B65"/>
 </svg>

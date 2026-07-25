@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type Tab = 'hoy' | 'actividades' | 'calendario' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
+type Tab = 'hoy' | 'tareas' | 'calendario' | 'cerebro' | 'yo' | 'progreso'
 type Block = 'mañana' | 'trabajo' | 'tarde' | 'post-6' | 'noche'
 type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby'
 type ResourceSource = 'GitHub' | 'Hacker News' | 'arXiv'
@@ -19,6 +19,7 @@ type Activity = {
   time?: string
   tip?: string
   custom?: boolean
+  date?: string
 }
 
 type Resource = {
@@ -52,6 +53,11 @@ type DailyState = {
   activities: Activity[]
   storagePersisted: 'desconocido' | 'activo' | 'básico' | 'no-soportado'
   resources: Resource[]
+  birthDate: string
+  mainGoal: string
+  wakeTime: string
+  sleepTime: string
+  currentPriority: string
 }
 
 type HistoryEntry = DailyState & { progress: number; completedCount: number }
@@ -142,15 +148,19 @@ const defaultState: DailyState = {
   activities: [...survivalRoutine, ...scientificRoutine, ...baseActivities],
   storagePersisted: 'desconocido',
   resources: [],
+  birthDate: '',
+  mainGoal: 'Construir una vida estable con cuerpo, mente e IA.',
+  wakeTime: '06:15',
+  sleepTime: '22:45',
+  currentPriority: 'Cumplir el siguiente paso, no todo el sistema.',
 }
 
 const tabs: { id: Tab; label: string }[] = [
   { id: 'hoy', label: 'Hoy' },
-  { id: 'actividades', label: 'Ritual' },
+  { id: 'tareas', label: 'Tareas' },
   { id: 'calendario', label: 'Calendario' },
-  { id: 'cuerpo', label: 'Cuerpo' },
-  { id: 'mente', label: 'Mente' },
-  { id: 'ia', label: 'IA' },
+  { id: 'cerebro', label: 'Cerebro' },
+  { id: 'yo', label: 'Yo' },
   { id: 'progreso', label: 'Progreso' },
 ]
 
@@ -161,8 +171,8 @@ function App() {
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>(() => getNotificationStatus())
 
   const visibleActivities = useMemo(
-    () => sortActivities(state.heavyDay ? state.activities.filter((activity) => activity.heavyDay || activity.essential) : state.activities),
-    [state.activities, state.heavyDay],
+    () => sortActivities(filterActivitiesForDate(state.activities, state.date, state.heavyDay)),
+    [state.activities, state.date, state.heavyDay],
   )
 
   const completedCount = visibleActivities.filter((activity) => state.completed[activity.id]).length
@@ -201,6 +211,14 @@ function App() {
         ? current.activities.map((item) => (item.id === activity.id ? activity : item))
         : [activity, ...current.activities],
     }))
+  }
+
+  function changeActiveDate(date: string) {
+    hapticClick()
+    const savedEntry = history.find((entry) => entry.date === date)
+    setState((current) => savedEntry
+      ? { ...defaultState, ...savedEntry, activities: mergeActivities(savedEntry.activities), resources: savedEntry.resources ?? [], birthDate: current.birthDate, mainGoal: current.mainGoal, wakeTime: current.wakeTime, sleepTime: current.sleepTime, currentPriority: current.currentPriority }
+      : { ...current, date, completed: {}, wins: ['', '', ''], rescueProblem: '' })
   }
 
   function deleteActivity(id: string) {
@@ -259,12 +277,11 @@ function App() {
       </header>
 
       <section className="page-card page-entry" key={activeTab}>
-        {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} notificationStatus={notificationStatus} requestDailyNotifications={requestDailyNotifications} />}
-        {activeTab === 'actividades' && <ActivitiesView activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
-        {activeTab === 'calendario' && <CalendarView history={history} state={state} progress={progress} completedCount={completedCount} />}
-        {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} history={history} />}
-        {activeTab === 'mente' && <MindView state={state} setState={setState} insights={insights} />}
-        {activeTab === 'ia' && <AiView state={state} setState={setState} deepMinutes={deepMinutes} />}
+        {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} upsertActivity={upsertActivity} changeActiveDate={changeActiveDate} />}
+        {activeTab === 'tareas' && <TasksView activeDate={state.date} activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
+        {activeTab === 'calendario' && <CalendarView history={history} state={state} progress={progress} completedCount={completedCount} changeActiveDate={changeActiveDate} />}
+        {activeTab === 'cerebro' && <BrainView state={state} setState={setState} history={history} progress={progress} completedCount={completedCount} deepMinutes={deepMinutes} insights={insights} />}
+        {activeTab === 'yo' && <YouView state={state} setState={setState} history={history} requestPersistentStorage={requestPersistentStorage} notificationStatus={notificationStatus} requestDailyNotifications={requestDailyNotifications} />}
         {activeTab === 'progreso' && <ProgressView progress={progress} state={state} completedCount={completedCount} insights={insights} history={history} />}
       </section>
 
@@ -275,7 +292,7 @@ function App() {
   )
 }
 
-function TodayView({ completedCount, progress, state, activities, insights, onToggle, setState, updateWin, requestPersistentStorage, notificationStatus, requestDailyNotifications }: {
+function TodayView({ completedCount, progress, state, activities, insights, onToggle, setState, updateWin, upsertActivity, changeActiveDate }: {
   completedCount: number
   progress: number
   state: DailyState
@@ -284,33 +301,48 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
   onToggle: (id: string) => void
   setState: React.Dispatch<React.SetStateAction<DailyState>>
   updateWin: (index: number, value: string) => void
-  requestPersistentStorage: () => void
-  notificationStatus: NotificationStatus
-  requestDailyNotifications: () => void
+  upsertActivity: (activity: Activity) => void
+  changeActiveDate: (date: string) => void
 }) {
   return (
     <>
-      <div className="date-line">{formatDate()}</div>
+      <section className="daily-console">
+        <div>
+          <p className="caption">Día activo</p>
+          <input type="date" value={state.date} onChange={(event) => changeActiveDate(event.target.value)} />
+        </div>
+        <div>
+          <p className="caption">Día de vida</p>
+          <strong>{lifeDayText(state.birthDate, state.date)}</strong>
+        </div>
+      </section>
       <div className="hero-grid">
         <div className="progress-ring" style={{ '--progress': `${progress * 3.6}deg` } as React.CSSProperties}>
           <strong>{progress}%</strong>
           <span>{completedCount}/{activities.length}</span>
         </div>
         <div>
-          <p className="caption">Ritmo del día</p>
+          <p className="caption">{formatDateKey(state.date)}</p>
           <h2>{state.heavyDay ? 'Solo lo esencial permanece.' : 'Un día. Una versión mejor.'}</h2>
-          <p className="soft-copy">Despertar sugerido: 6:15 AM. Luz natural temprano. Pantallas cálidas después de las 6 PM. Dormir: 10:45 PM.</p>
+          <p className="soft-copy">Despertar sugerido: {state.wakeTime}. Prioridad: {state.currentPriority}. Dormir: {state.sleepTime}.</p>
         </div>
       </div>
 
-      <StorageCard status={state.storagePersisted} requestPersistentStorage={requestPersistentStorage} />
-      <NotificationCard status={notificationStatus} requestDailyNotifications={requestDailyNotifications} />
       <InsightCard text={insights[0]} />
+      <QuickTaskForm activeDate={state.date} upsertActivity={upsertActivity} />
+
+      <div className="metric-grid status-strip">
+        <Metric label="Sueño" value={`${state.sleepHours} h`} helper="Señal de carga" />
+        <Metric label="Ansiedad" value={`${state.anxiety}/5`} helper="No dirige. Informa." />
+        <Metric label="Energía" value={`${state.energy}/5`} helper="Ajusta el ritmo" />
+        <Metric label="Pasos" value={state.steps.toLocaleString('es-MX')} helper="Movimiento" />
+      </div>
 
       {(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => (
         <section className="ritual-block" key={block}>
           <p className="caption">{blockLabel(block)}</p>
           {activities.filter((activity) => activity.block === block).map((activity) => <ActivityRow key={activity.id} activity={activity} done={Boolean(state.completed[activity.id])} onToggle={onToggle} />)}
+          {!activities.some((activity) => activity.block === block) && <p className="empty-copy">Sin tareas en este módulo.</p>}
         </section>
       ))}
 
@@ -327,21 +359,70 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
   )
 }
 
-function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void }) {
-  const [draft, setDraft] = useState<Activity>(newActivity())
+function QuickTaskForm({ activeDate, upsertActivity }: { activeDate: string; upsertActivity: (activity: Activity) => void }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<Activity>(() => newActivity(activeDate))
+  const [scope, setScope] = useState<'dia' | 'rutina'>('dia')
+  const [error, setError] = useState('')
+
+  function save() {
+    if (!draft.title.trim()) {
+      setError('Ponle nombre a la tarea para guardarla.')
+      return
+    }
+    upsertActivity({ ...draft, title: draft.title.trim(), detail: draft.detail.trim() || 'Tarea concreta.', date: scope === 'dia' ? activeDate : undefined, custom: true })
+    setDraft(newActivity(activeDate))
+    setScope('dia')
+    setError('')
+    setOpen(false)
+  }
+
+  if (!open) return <button className="quick-add-button" type="button" onClick={() => { hapticClick(); setOpen(true) }}>+ Nueva tarea</button>
+
+  return (
+    <section className="form-card quick-task-card">
+      <p className="caption">Nueva tarea rápida</p>
+      <label><span>Nombre</span><input value={draft.title} placeholder="Ej. Caminar 10 minutos" onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
+      <div className="two-columns">
+        <label><span>Hora</span><input type="time" value={draft.time ?? ''} onChange={(event) => setDraft({ ...draft, time: event.target.value })} /></label>
+        <label><span>Bloque</span><select value={draft.block} onChange={(event) => setDraft({ ...draft, block: event.target.value as Block })}>{(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => <option key={block} value={block}>{blockLabel(block)}</option>)}</select></label>
+      </div>
+      <div className="two-columns">
+        <label><span>Tipo</span><select value={scope} onChange={(event) => setScope(event.target.value as 'dia' | 'rutina')}><option value="dia">Solo este día</option><option value="rutina">Rutina permanente</option></select></label>
+        <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{(['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby'] as Category[]).map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+      </div>
+      <label className="inline-check"><input type="checkbox" checked={draft.heavyDay} onChange={(event) => setDraft({ ...draft, heavyDay: event.target.checked })} /> Aparece en día pesado</label>
+      {error && <p className="error-copy">{error}</p>}
+      <div className="split-actions">
+        <button className="primary-action" type="button" onClick={save}>Guardar</button>
+        <button className="secondary-action" type="button" onClick={() => { hapticClick(); setOpen(false); setError('') }}>Cancelar</button>
+      </div>
+    </section>
+  )
+}
+
+function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: { activeDate: string; activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void }) {
+  const [draft, setDraft] = useState<Activity>(newActivity(activeDate))
+  const [scope, setScope] = useState<'dia' | 'rutina'>('rutina')
+  const [error, setError] = useState('')
   const sortedActivities = sortActivities(activities)
 
   function save() {
-    if (!draft.title.trim()) return
-    upsertActivity({ ...draft, title: draft.title.trim(), detail: draft.detail.trim() || 'Actividad personal.', custom: true })
-    setDraft(newActivity())
+    if (!draft.title.trim()) {
+      setError('Ponle nombre a la tarea para guardarla.')
+      return
+    }
+    upsertActivity({ ...draft, title: draft.title.trim(), detail: draft.detail.trim() || 'Actividad personal.', date: scope === 'dia' ? activeDate : undefined, custom: true })
+    setDraft(newActivity(activeDate))
+    setScope('rutina')
+    setError('')
   }
 
   return (
     <>
-      <SectionTitle caption="Ritual" title="Tus actividades" />
+      <SectionTitle caption="Tareas" title="Organiza tus acciones" />
       <section className="form-card">
-        <p className="caption">Nueva actividad</p>
+        <p className="caption">Nueva tarea</p>
         <label><span>Nombre</span><input value={draft.title} placeholder="Ej. Estudiar embeddings" onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
         <label><span>Detalle</span><input value={draft.detail} placeholder="Qué harás exactamente" onChange={(event) => setDraft({ ...draft, detail: event.target.value })} /></label>
         <div className="two-columns">
@@ -352,7 +433,9 @@ function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activi
           <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{(['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby'] as Category[]).map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
           <label><span>Hora</span><input type="time" value={draft.time ?? ''} onChange={(event) => setDraft({ ...draft, time: event.target.value })} /></label>
         </div>
+        <label><span>Tipo</span><select value={scope} onChange={(event) => setScope(event.target.value as 'dia' | 'rutina')}><option value="rutina">Rutina permanente</option><option value="dia">Solo {formatDateKey(activeDate)}</option></select></label>
         <label className="inline-check"><input type="checkbox" checked={draft.heavyDay} onChange={(event) => setDraft({ ...draft, heavyDay: event.target.checked })} /> Cuenta en día pesado</label>
+        {error && <p className="error-copy">{error}</p>}
         <button className="primary-action" type="button" onClick={save}>Guardar actividad</button>
       </section>
 
@@ -372,8 +455,8 @@ function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activi
             </div>
             {blockActivities.map((activity) => (
               <article className="editable-row" key={activity.id}>
-                <div><p className="caption">{activity.time ?? 'Sin hora'} · {activity.category}{activity.essential ? ' · esencial' : ''}</p><strong>{activity.title}</strong><small>{activity.detail}</small></div>
-                <div className="row-actions"><button type="button" onClick={() => { hapticClick(); setDraft(activity) }}>Editar</button><button type="button" onClick={() => deleteActivity(activity.id)}>Borrar</button></div>
+                <div><p className="caption">{activity.time ?? 'Sin hora'} · {activity.category}{activity.essential ? ' · esencial' : ''}{activity.date ? ' · solo fecha' : ' · rutina'}</p><strong>{activity.title}</strong><small>{activity.detail}</small></div>
+                <div className="row-actions"><button type="button" onClick={() => { hapticClick(); setDraft(activity); setScope(activity.date ? 'dia' : 'rutina') }}>Editar</button><button type="button" onClick={() => deleteActivity(activity.id)}>Borrar</button></div>
               </article>
             ))}
           </section>
@@ -383,7 +466,7 @@ function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activi
   )
 }
 
-function CalendarView({ history, state, progress, completedCount }: { history: HistoryEntry[]; state: DailyState; progress: number; completedCount: number }) {
+function CalendarView({ history, state, progress, completedCount, changeActiveDate }: { history: HistoryEntry[]; state: DailyState; progress: number; completedCount: number; changeActiveDate: (date: string) => void }) {
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
   const [selectedDate, setSelectedDate] = useState(todayKey())
   const historyMap = new Map(history.map((entry) => [entry.date, entry]))
@@ -433,6 +516,7 @@ function CalendarView({ history, state, progress, completedCount }: { history: H
       <section className="calendar-readout">
         <p className="caption">Día seleccionado</p>
         <h2>{formatDateKey(selectedDate)}</h2>
+        <button className="primary-action" type="button" onClick={() => changeActiveDate(selectedDate)}>Usar este día</button>
         {selectedEntry ? (
           <div className="metric-grid">
             <Metric label="Progreso" value={`${selectedEntry.progress}%`} helper={`${selectedEntry.completedCount} acciones`} />
@@ -442,6 +526,102 @@ function CalendarView({ history, state, progress, completedCount }: { history: H
           </div>
         ) : <p className="soft-copy">Todavía no hay registro para este día.</p>}
       </section>
+    </>
+  )
+}
+
+function BrainView({ state, setState, history, progress, completedCount, deepMinutes, insights }: { state: DailyState; setState: React.Dispatch<React.SetStateAction<DailyState>>; history: HistoryEntry[]; progress: number; completedCount: number; deepMinutes: number; insights: string[] }) {
+  const weakBlock = getWeakBlock(state)
+  return (
+    <>
+      <SectionTitle caption="Cerebro" title="Dos cerebros conectados" />
+      <section className="brain-board">
+        <div className="brain-panel user-brain">
+          <p className="caption">Cerebro usuario</p>
+          <h2>Señales</h2>
+          <BrainSignal label="Sueño" value={`${state.sleepHours} h`} />
+          <BrainSignal label="Ansiedad" value={`${state.anxiety}/5`} />
+          <BrainSignal label="Energía" value={`${state.energy}/5`} />
+          <BrainSignal label="Pasos" value={state.steps.toLocaleString('es-MX')} />
+          <BrainSignal label="Victorias" value={String(state.wins.filter(Boolean).length)} />
+        </div>
+        <div className="brain-bridge" aria-hidden="true">
+          <span />
+          <strong>{progress}%</strong>
+          <span />
+        </div>
+        <div className="brain-panel system-brain">
+          <p className="caption">Cerebro sistema</p>
+          <h2>Decisiones</h2>
+          <BrainSignal label="Tareas" value={`${completedCount} hechas`} />
+          <BrainSignal label="Bloque débil" value={blockLabel(weakBlock)} />
+          <BrainSignal label="IA profunda" value={`${deepMinutes}m`} />
+          <BrainSignal label="Día pesado" value={state.heavyDay ? 'activo' : 'no'} />
+          <BrainSignal label="Recursos" value={String(state.resources.length)} />
+        </div>
+      </section>
+      <section className="rule-card">
+        <p className="caption">Cómo funciona</p>
+        <p>Tu cuerpo y mente envían señales. El sistema acomoda tareas, progreso y recomendaciones para que el siguiente paso sea más claro.</p>
+        <p>{insights[0]}</p>
+      </section>
+      <div className="brain-modules">
+        <BodyView state={state} setState={setState} history={history} />
+        <MindView state={state} setState={setState} insights={insights} />
+        <AiView state={state} setState={setState} deepMinutes={deepMinutes} />
+      </div>
+    </>
+  )
+}
+
+function BrainSignal({ label, value }: { label: string; value: string }) {
+  return <article className="brain-signal"><span>{label}</span><strong>{value}</strong></article>
+}
+
+function YouView({ state, setState, history, requestPersistentStorage, notificationStatus, requestDailyNotifications }: {
+  state: DailyState
+  setState: React.Dispatch<React.SetStateAction<DailyState>>
+  history: HistoryEntry[]
+  requestPersistentStorage: () => void
+  notificationStatus: NotificationStatus
+  requestDailyNotifications: () => void
+}) {
+  const week = history.slice(-7)
+  const avgSleep = average(week.map((entry) => entry.sleepHours)) || state.sleepHours
+  const avgAnxiety = average(week.map((entry) => entry.anxiety)) || state.anxiety
+  const avgEnergy = average(week.map((entry) => entry.energy)) || state.energy
+  const avgSteps = average(week.map((entry) => entry.steps)) || state.steps
+  const heavyDays = week.filter((entry) => entry.heavyDay).length
+  const winsCount = state.wins.filter(Boolean).length
+
+  return (
+    <>
+      <SectionTitle caption="Yo" title="Lo que la app conoce de ti" />
+      <section className="form-card profile-card">
+        <p className="caption">Perfil editable</p>
+        <label><span>Fecha de nacimiento</span><input type="date" value={state.birthDate} onChange={(event) => setState((current) => ({ ...current, birthDate: event.target.value }))} /></label>
+        <label><span>Meta principal</span><input value={state.mainGoal} onChange={(event) => setState((current) => ({ ...current, mainGoal: event.target.value }))} /></label>
+        <div className="two-columns">
+          <label><span>Despertar normal</span><input type="time" value={state.wakeTime} onChange={(event) => setState((current) => ({ ...current, wakeTime: event.target.value }))} /></label>
+          <label><span>Dormir normal</span><input type="time" value={state.sleepTime} onChange={(event) => setState((current) => ({ ...current, sleepTime: event.target.value }))} /></label>
+        </div>
+        <label><span>Prioridad actual</span><input value={state.currentPriority} onChange={(event) => setState((current) => ({ ...current, currentPriority: event.target.value }))} /></label>
+      </section>
+
+      <section className="knowledge-grid">
+        <Metric label="Día de vida" value={lifeDayText(state.birthDate, state.date)} helper="Según tu fecha" />
+        <Metric label="Sueño promedio" value={`${avgSleep.toFixed(1)} h`} helper="Semana reciente" />
+        <Metric label="Ansiedad" value={`${avgAnxiety.toFixed(1)}/5`} helper="Señal reciente" />
+        <Metric label="Energía" value={`${avgEnergy.toFixed(1)}/5`} helper="Señal reciente" />
+        <Metric label="Pasos promedio" value={Math.round(avgSteps).toLocaleString('es-MX')} helper="Movimiento" />
+        <Metric label="Días pesados" value={String(heavyDays)} helper="Últimos 7 registros" />
+        <Metric label="Bloque débil" value={blockLabel(getWeakBlock(state))} helper="Según tareas" />
+        <Metric label="Recursos IA" value={String(state.resources.length)} helper="Biblioteca" />
+        <Metric label="Victorias hoy" value={String(winsCount)} helper="Identidad escrita" />
+      </section>
+
+      <StorageCard status={state.storagePersisted} requestPersistentStorage={requestPersistentStorage} />
+      <NotificationCard status={notificationStatus} requestDailyNotifications={requestDailyNotifications} />
     </>
   )
 }
@@ -699,6 +879,14 @@ function sortActivities(activities: Activity[]) {
   })
 }
 
+function filterActivitiesForDate(activities: Activity[], date: string, heavyDay: boolean) {
+  return activities.filter((activity) => {
+    const belongsToDate = !activity.date || activity.date === date
+    const belongsToLoad = !heavyDay || activity.heavyDay || activity.essential
+    return belongsToDate && belongsToLoad
+  })
+}
+
 async function persistState(state: DailyState, progress: number, completedCount: number) {
   localStorage.setItem('one-mode-state', JSON.stringify(state))
   const entry: HistoryEntry = { ...state, progress, completedCount }
@@ -739,8 +927,8 @@ async function idbAll<T>(store: string): Promise<T[]> {
   })
 }
 
-function newActivity(): Activity {
-  return { id: `custom-${Date.now()}`, block: 'mañana', title: '', detail: '', minutes: 15, category: 'ia', essential: false, heavyDay: false, time: '06:30', custom: true }
+function newActivity(date = todayKey()): Activity {
+  return { id: `custom-${Date.now()}`, block: 'mañana', title: '', detail: '', minutes: 15, category: 'ia', essential: false, heavyDay: false, time: '06:30', custom: true, date }
 }
 
 function getWeakBlock(state: DailyState): Block {
@@ -855,17 +1043,25 @@ function dateToKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function lifeDayText(birthDate: string, activeDate: string) {
+  if (!birthDate) return 'Configura nacimiento'
+  const start = parseDateKey(birthDate)
+  const end = parseDateKey(activeDate)
+  const diff = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1
+  return diff > 0 ? `Día ${diff.toLocaleString('es-MX')}` : 'Fecha inválida'
+}
+
+function parseDateKey(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function formatDate() {
-  return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
-}
-
 function formatDateKey(date: string) {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(year, month - 1, day))
+  return new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(parseDateKey(date))
 }
 
 export default App

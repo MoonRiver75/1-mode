@@ -5,6 +5,7 @@ type Tab = 'hoy' | 'actividades' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
 type Block = 'mañana' | 'trabajo' | 'tarde' | 'post-6' | 'noche'
 type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby'
 type ResourceSource = 'GitHub' | 'Hacker News' | 'arXiv'
+type NotificationStatus = NotificationPermission | 'unsupported'
 
 type Activity = {
   id: string
@@ -26,6 +27,13 @@ type Resource = {
   url: string
   source: ResourceSource
   meta: string
+}
+
+type DailyReminder = {
+  id: string
+  time: string
+  title: string
+  body: string
 }
 
 type DailyState = {
@@ -86,6 +94,12 @@ const progressivePlan = [
   'Semana 3: añade 1 hora Pomodoro. No más.',
 ]
 
+const dailyReminders: DailyReminder[] = [
+  { id: 'morning', time: '06:00', title: 'Buenos días', body: 'Empieza simple: agua, luz natural y una acción mínima.' },
+  { id: 'happy-hour', time: '18:00', title: 'Hora feliz', body: 'Antes de entrar en automático: camina, respira y protege la tarde.' },
+  { id: 'sleep', time: '22:30', title: 'A dormir', body: 'Móvil fuera, luces bajas y descarga mental. Mañana se continúa.' },
+]
+
 const scientificRoutine: Activity[] = [
   { id: 'chrono-alarm', block: 'mañana', title: 'Levantarse sin snooze', detail: 'Cortar sueño fragmentado y niebla mental.', minutes: 1, category: 'sueño', essential: true, heavyDay: true, time: '06:00', tip: 'No uses repetición. El sueño fragmentado aumenta la niebla mental.' },
   { id: 'chrono-sun', block: 'mañana', title: 'Luz solar directa', detail: 'Salir 10 minutos, incluso si está nublado.', minutes: 10, category: 'sueño', essential: true, heavyDay: true, time: '06:05', tip: 'La luz natural frena melatonina y sincroniza el reloj biológico.' },
@@ -143,6 +157,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('hoy')
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [state, setState] = useState<DailyState>(() => loadState())
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>(() => getNotificationStatus())
 
   const visibleActivities = useMemo(
     () => (state.heavyDay ? state.activities.filter((activity) => activity.heavyDay || activity.essential) : state.activities),
@@ -163,6 +178,11 @@ function App() {
   useEffect(() => {
     loadHistory().then(setHistory).catch(() => undefined)
   }, [])
+
+  useEffect(() => {
+    if (notificationStatus !== 'granted') return undefined
+    return scheduleDailyNotifications(dailyReminders)
+  }, [notificationStatus])
 
   function toggleActivity(id: string) {
     setState((current) => ({
@@ -204,6 +224,15 @@ function App() {
     setState((current) => ({ ...current, storagePersisted: granted ? 'activo' : 'básico' }))
   }
 
+  async function requestDailyNotifications() {
+    if (!('Notification' in window)) {
+      setNotificationStatus('unsupported')
+      return
+    }
+    const permission = await Notification.requestPermission()
+    setNotificationStatus(permission)
+  }
+
   return (
     <main className="app-shell">
       <div className="paper-grain" />
@@ -224,7 +253,7 @@ function App() {
       </header>
 
       <section className="page-card page-entry" key={activeTab}>
-        {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} />}
+        {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} notificationStatus={notificationStatus} requestDailyNotifications={requestDailyNotifications} />}
         {activeTab === 'actividades' && <ActivitiesView activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
         {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} history={history} />}
         {activeTab === 'mente' && <MindView state={state} setState={setState} insights={insights} />}
@@ -239,7 +268,7 @@ function App() {
   )
 }
 
-function TodayView({ completedCount, progress, state, activities, insights, onToggle, setState, updateWin, requestPersistentStorage }: {
+function TodayView({ completedCount, progress, state, activities, insights, onToggle, setState, updateWin, requestPersistentStorage, notificationStatus, requestDailyNotifications }: {
   completedCount: number
   progress: number
   state: DailyState
@@ -249,6 +278,8 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
   setState: React.Dispatch<React.SetStateAction<DailyState>>
   updateWin: (index: number, value: string) => void
   requestPersistentStorage: () => void
+  notificationStatus: NotificationStatus
+  requestDailyNotifications: () => void
 }) {
   return (
     <>
@@ -266,6 +297,7 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
       </div>
 
       <StorageCard status={state.storagePersisted} requestPersistentStorage={requestPersistentStorage} />
+      <NotificationCard status={notificationStatus} requestDailyNotifications={requestDailyNotifications} />
       <InsightCard text={insights[0]} />
 
       {(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => (
@@ -485,6 +517,19 @@ function StorageCard({ status, requestPersistentStorage }: { status: DailyState[
   return <aside className="storage-card"><div><p className="caption">Guardado</p><p>{storageText(status)}</p></div><button type="button" onClick={requestPersistentStorage}>Permitir</button></aside>
 }
 
+function NotificationCard({ status, requestDailyNotifications }: { status: NotificationStatus; requestDailyNotifications: () => void }) {
+  return (
+    <aside className="notification-card">
+      <div>
+        <p className="caption">Notificaciones</p>
+        <p>{notificationText(status)}</p>
+        <small>6:00 Buenos días · 18:00 Hora feliz · 22:30 A dormir</small>
+      </div>
+      <button type="button" onClick={requestDailyNotifications} disabled={status === 'granted' || status === 'unsupported'}>{status === 'granted' ? 'Activas' : 'Activar'}</button>
+    </aside>
+  )
+}
+
 function SectionTitle({ caption, title }: { caption: string; title: string }) {
   return <div className="section-title"><p className="caption">{caption}</p><h2>{title}</h2></div>
 }
@@ -620,6 +665,66 @@ function storageText(status: DailyState['storagePersisted']) {
   if (status === 'básico') return 'Guardado local básico. El navegador puede limpiarlo si falta espacio.'
   if (status === 'no-soportado') return 'Este navegador no permite pedir persistencia, pero se guarda localmente.'
   return 'Tus datos se guardan en este dispositivo. Puedes pedir almacenamiento persistente.'
+}
+
+function notificationText(status: NotificationStatus) {
+  if (status === 'granted') return 'Recordatorios diarios activos en este dispositivo.'
+  if (status === 'denied') return 'El navegador bloqueó las notificaciones. Puedes cambiarlas en permisos del sitio.'
+  if (status === 'unsupported') return 'Este navegador no soporta notificaciones web.'
+  return 'Activa recordatorios suaves para los tres momentos clave del día.'
+}
+
+function getNotificationStatus(): NotificationStatus {
+  if (typeof Notification === 'undefined') return 'unsupported'
+  return Notification.permission
+}
+
+function scheduleDailyNotifications(reminders: DailyReminder[]) {
+  let cancelled = false
+  const timers: number[] = []
+
+  reminders.forEach((reminder) => {
+    const scheduleNext = () => {
+      const timer = window.setTimeout(() => {
+        if (cancelled) return
+        showDailyNotification(reminder).catch(() => undefined)
+        scheduleNext()
+      }, getDelayUntil(reminder.time))
+      timers.push(timer)
+    }
+    scheduleNext()
+  })
+
+  return () => {
+    cancelled = true
+    timers.forEach((timer) => window.clearTimeout(timer))
+  }
+}
+
+async function showDailyNotification(reminder: DailyReminder) {
+  const options: NotificationOptions = {
+    body: reminder.body,
+    icon: './icon.svg',
+    badge: './icon.svg',
+    tag: `one-mode-${reminder.id}`,
+  }
+
+  if ('serviceWorker' in navigator) {
+    const registration = await navigator.serviceWorker.ready
+    await registration.showNotification(reminder.title, options)
+    return
+  }
+
+  new Notification(reminder.title, options)
+}
+
+function getDelayUntil(time: string) {
+  const [hours, minutes] = time.split(':').map(Number)
+  const now = new Date()
+  const next = new Date(now)
+  next.setHours(hours, minutes, 0, 0)
+  if (next <= now) next.setDate(next.getDate() + 1)
+  return next.getTime() - now.getTime()
 }
 
 function average(values: number[]) {

@@ -311,7 +311,7 @@ h2 {
 
 .soft-copy { margin: 14px 0 0; color: var(--ink-soft); line-height: 1.85; }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .resource-card, .emergency-card, .rule-card, .metric-card {
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card, .metric-card {
   position: relative;
   margin: 20px 0;
   border: 1px solid color-mix(in srgb, var(--outline) 58%, transparent);
@@ -323,9 +323,9 @@ h2 {
   transition: transform 260ms var(--ease), box-shadow 260ms var(--ease), border-color 260ms var(--ease);
 }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .resource-card, .emergency-card, .rule-card { padding: 20px; }
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card { padding: 20px; }
 
-.insight-card::after, .journal-card::after, .form-card::after, .rescue-card::after, .achievement-list::after, .storage-card::after, .resource-card::after, .emergency-card::after, .rule-card::after, .metric-card::after {
+.insight-card::after, .journal-card::after, .form-card::after, .rescue-card::after, .achievement-list::after, .storage-card::after, .notification-card::after, .resource-card::after, .emergency-card::after, .rule-card::after, .metric-card::after {
   content: '';
   pointer-events: none;
   position: absolute;
@@ -335,7 +335,7 @@ h2 {
   opacity: 0.7;
 }
 
-.insight-card:hover, .journal-card:hover, .form-card:hover, .rescue-card:hover, .achievement-list:hover, .storage-card:hover, .resource-card:hover, .emergency-card:hover, .rule-card:hover, .metric-card:hover {
+.insight-card:hover, .journal-card:hover, .form-card:hover, .rescue-card:hover, .achievement-list:hover, .storage-card:hover, .notification-card:hover, .resource-card:hover, .emergency-card:hover, .rule-card:hover, .metric-card:hover {
   border-color: color-mix(in srgb, var(--primary-warm) 34%, var(--outline));
   box-shadow: var(--shadow-paper);
   transform: translateY(-3px);
@@ -497,7 +497,7 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
 
 .sliders input { accent-color: var(--primary-warm); }
 
-.storage-card {
+.storage-card, .notification-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -505,9 +505,10 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
   background: linear-gradient(145deg, color-mix(in srgb, var(--water) 56%, var(--surface-card)), color-mix(in srgb, var(--surface-low) 70%, transparent));
 }
 
-.storage-card p:last-child { margin: 0; color: var(--ink-soft); }
+.storage-card p:last-child, .notification-card p { margin: 0; color: var(--ink-soft); }
+.notification-card small { display: block; margin-top: 8px; color: var(--ink-soft); }
 
-.storage-card button, .resource-card button, .row-actions button {
+.storage-card button, .notification-card button, .resource-card button, .row-actions button {
   border: 0;
   border-bottom: 1px solid var(--primary-warm);
   background: transparent;
@@ -517,6 +518,13 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.notification-card button:disabled {
+  border-color: color-mix(in srgb, var(--outline) 80%, transparent);
+  color: var(--ink-soft);
+  cursor: default;
+  opacity: 0.72;
 }
 
 .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

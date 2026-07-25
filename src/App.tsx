@@ -207,14 +207,20 @@ function App() {
   return (
     <main className="app-shell">
       <div className="paper-grain" />
+      <div className="ambient-orb ambient-orb-a" aria-hidden="true" />
+      <div className="ambient-orb ambient-orb-b" aria-hidden="true" />
       <header className="topbar">
         <div>
           <p className="caption">El Método del 1%</p>
           <h1>1 MODE<span aria-hidden="true" /></h1>
+          <p className="topbar-copy">Rituales mínimos para cuerpo, mente e IA.</p>
         </div>
-        <button className="seal-button" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: !current.heavyDay }))}>
-          {state.heavyDay ? 'Día pesado' : 'Normal'}
-        </button>
+        <div className="topbar-actions">
+          <span>{progress}% hoy</span>
+          <button className="seal-button" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: !current.heavyDay }))}>
+            {state.heavyDay ? 'Día pesado' : 'Normal'}
+          </button>
+        </div>
       </header>
 
       <section className="page-card page-entry" key={activeTab}>

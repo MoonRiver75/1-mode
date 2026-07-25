@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type Tab = 'hoy' | 'actividades' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
+type Tab = 'hoy' | 'actividades' | 'calendario' | 'cuerpo' | 'mente' | 'ia' | 'progreso'
 type Block = 'mañana' | 'trabajo' | 'tarde' | 'post-6' | 'noche'
 type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby'
 type ResourceSource = 'GitHub' | 'Hacker News' | 'arXiv'
@@ -147,6 +147,7 @@ const defaultState: DailyState = {
 const tabs: { id: Tab; label: string }[] = [
   { id: 'hoy', label: 'Hoy' },
   { id: 'actividades', label: 'Ritual' },
+  { id: 'calendario', label: 'Calendario' },
   { id: 'cuerpo', label: 'Cuerpo' },
   { id: 'mente', label: 'Mente' },
   { id: 'ia', label: 'IA' },
@@ -160,7 +161,7 @@ function App() {
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>(() => getNotificationStatus())
 
   const visibleActivities = useMemo(
-    () => (state.heavyDay ? state.activities.filter((activity) => activity.heavyDay || activity.essential) : state.activities),
+    () => sortActivities(state.heavyDay ? state.activities.filter((activity) => activity.heavyDay || activity.essential) : state.activities),
     [state.activities, state.heavyDay],
   )
 
@@ -185,6 +186,7 @@ function App() {
   }, [notificationStatus])
 
   function toggleActivity(id: string) {
+    hapticClick()
     setState((current) => ({
       ...current,
       completed: { ...current.completed, [id]: !current.completed[id] },
@@ -192,6 +194,7 @@ function App() {
   }
 
   function upsertActivity(activity: Activity) {
+    hapticClick()
     setState((current) => ({
       ...current,
       activities: current.activities.some((item) => item.id === activity.id)
@@ -201,6 +204,7 @@ function App() {
   }
 
   function deleteActivity(id: string) {
+    hapticClick()
     setState((current) => {
       const { [id]: _removed, ...completed } = current.completed
       return { ...current, completed, activities: current.activities.filter((activity) => activity.id !== id) }
@@ -216,6 +220,7 @@ function App() {
   }
 
   async function requestPersistentStorage() {
+    hapticClick()
     if (!navigator.storage?.persist) {
       setState((current) => ({ ...current, storagePersisted: 'no-soportado' }))
       return
@@ -225,6 +230,7 @@ function App() {
   }
 
   async function requestDailyNotifications() {
+    hapticClick()
     if (!('Notification' in window)) {
       setNotificationStatus('unsupported')
       return
@@ -246,7 +252,7 @@ function App() {
         </div>
         <div className="topbar-actions">
           <span>{progress}% hoy</span>
-          <button className="seal-button" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: !current.heavyDay }))}>
+          <button className={`seal-button ${state.heavyDay ? 'is-on' : ''}`} type="button" onClick={() => { hapticClick(); setState((current) => ({ ...current, heavyDay: !current.heavyDay })) }}>
             {state.heavyDay ? 'Día pesado' : 'Normal'}
           </button>
         </div>
@@ -255,6 +261,7 @@ function App() {
       <section className="page-card page-entry" key={activeTab}>
         {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} requestPersistentStorage={requestPersistentStorage} notificationStatus={notificationStatus} requestDailyNotifications={requestDailyNotifications} />}
         {activeTab === 'actividades' && <ActivitiesView activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
+        {activeTab === 'calendario' && <CalendarView history={history} state={state} progress={progress} completedCount={completedCount} />}
         {activeTab === 'cuerpo' && <BodyView state={state} setState={setState} history={history} />}
         {activeTab === 'mente' && <MindView state={state} setState={setState} insights={insights} />}
         {activeTab === 'ia' && <AiView state={state} setState={setState} deepMinutes={deepMinutes} />}
@@ -262,7 +269,7 @@ function App() {
       </section>
 
       <nav className="bottom-nav" aria-label="Navegación principal">
-        {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} type="button" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
+        {tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} type="button" onClick={() => { hapticClick(); setActiveTab(tab.id) }}>{tab.label}</button>)}
       </nav>
     </main>
   )
@@ -313,8 +320,8 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
       </section>
 
       <div className="split-actions">
-        <button className="primary-action" type="button" onClick={() => setState((current) => ({ ...current, heavyDay: true }))}>Día pesado</button>
-        <button className="secondary-action" type="button" onClick={() => setState((current) => ({ ...current, completed: {} }))}>Limpiar hoy</button>
+        <button className="primary-action" type="button" onClick={() => { hapticClick(); setState((current) => ({ ...current, heavyDay: true })) }}>Día pesado</button>
+        <button className="secondary-action" type="button" onClick={() => { hapticClick(); setState((current) => ({ ...current, completed: {} })) }}>Limpiar hoy</button>
       </div>
     </>
   )
@@ -322,6 +329,7 @@ function TodayView({ completedCount, progress, state, activities, insights, onTo
 
 function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void }) {
   const [draft, setDraft] = useState<Activity>(newActivity())
+  const sortedActivities = sortActivities(activities)
 
   function save() {
     if (!draft.title.trim()) return
@@ -353,12 +361,87 @@ function ActivitiesView({ activities, upsertActivity, deleteActivity }: { activi
         <p className="soft-copy">Modo Supervivencia está primero: desayuno simple, kit de rescate, caminata antes de entrar a casa y sueño sin móvil. La regla: hábitos de uno en uno.</p>
       </section>
 
-      {activities.map((activity) => (
-        <article className="editable-row" key={activity.id}>
-          <div><p className="caption">{blockLabel(activity.block)} · {activity.category}</p><strong>{activity.title}</strong><small>{activity.detail}</small></div>
-          <div className="row-actions"><button type="button" onClick={() => setDraft(activity)}>Editar</button><button type="button" onClick={() => deleteActivity(activity.id)}>Borrar</button></div>
-        </article>
-      ))}
+      {(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => {
+        const blockActivities = sortedActivities.filter((activity) => activity.block === block)
+        return (
+          <section className="module-board" key={block}>
+            <div className="module-board-header">
+              <p className="caption">Módulo</p>
+              <h2>{blockLabel(block)}</h2>
+              <span>{blockActivities.length} piezas</span>
+            </div>
+            {blockActivities.map((activity) => (
+              <article className="editable-row" key={activity.id}>
+                <div><p className="caption">{activity.time ?? 'Sin hora'} · {activity.category}{activity.essential ? ' · esencial' : ''}</p><strong>{activity.title}</strong><small>{activity.detail}</small></div>
+                <div className="row-actions"><button type="button" onClick={() => { hapticClick(); setDraft(activity) }}>Editar</button><button type="button" onClick={() => deleteActivity(activity.id)}>Borrar</button></div>
+              </article>
+            ))}
+          </section>
+        )
+      })}
+    </>
+  )
+}
+
+function CalendarView({ history, state, progress, completedCount }: { history: HistoryEntry[]; state: DailyState; progress: number; completedCount: number }) {
+  const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()))
+  const [selectedDate, setSelectedDate] = useState(todayKey())
+  const historyMap = new Map(history.map((entry) => [entry.date, entry]))
+  const currentEntry: HistoryEntry = { ...state, progress, completedCount }
+  const selectedEntry = selectedDate === state.date ? currentEntry : historyMap.get(selectedDate)
+  const days = getCalendarDays(monthCursor)
+  const monthLabel = new Intl.DateTimeFormat('es-MX', { month: 'long', year: 'numeric' }).format(monthCursor)
+
+  function moveMonth(offset: number) {
+    hapticClick()
+    setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1))
+  }
+
+  return (
+    <>
+      <SectionTitle caption="Calendario" title="Registro interno" />
+      <section className="calendar-panel">
+        <div className="calendar-controls">
+          <button type="button" onClick={() => moveMonth(-1)}>Anterior</button>
+          <strong>{monthLabel}</strong>
+          <button type="button" onClick={() => moveMonth(1)}>Siguiente</button>
+        </div>
+        <div className="calendar-weekdays">
+          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}
+        </div>
+        <div className="calendar-grid">
+          {days.map((day) => {
+            const dateKey = dateToKey(day)
+            const entry = dateKey === state.date ? currentEntry : historyMap.get(dateKey)
+            const isCurrentMonth = day.getMonth() === monthCursor.getMonth()
+            const isSelected = selectedDate === dateKey
+            return (
+              <button
+                className={`calendar-day ${isCurrentMonth ? '' : 'muted'} ${entry ? 'has-entry' : ''} ${isSelected ? 'selected' : ''}`}
+                key={dateKey}
+                style={{ '--day-progress': `${entry?.progress ?? 0}%` } as React.CSSProperties}
+                type="button"
+                onClick={() => { hapticClick(); setSelectedDate(dateKey) }}
+              >
+                <span>{day.getDate()}</span>
+                <em>{entry ? `${entry.progress}%` : ''}</em>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+      <section className="calendar-readout">
+        <p className="caption">Día seleccionado</p>
+        <h2>{formatDateKey(selectedDate)}</h2>
+        {selectedEntry ? (
+          <div className="metric-grid">
+            <Metric label="Progreso" value={`${selectedEntry.progress}%`} helper={`${selectedEntry.completedCount} acciones`} />
+            <Metric label="Sueño" value={`${selectedEntry.sleepHours} h`} helper="Registro local" />
+            <Metric label="Pasos" value={selectedEntry.steps.toLocaleString('es-MX')} helper="Movimiento" />
+            <Metric label="Día pesado" value={selectedEntry.heavyDay ? 'activo' : 'no'} helper="Carga del sistema" />
+          </div>
+        ) : <p className="soft-copy">Todavía no hay registro para este día.</p>}
+      </section>
     </>
   )
 }
@@ -374,8 +457,8 @@ function BodyView({ state, setState, history }: { state: DailyState; setState: R
         <Metric label="Entreno" value={state.workout} helper="Gym y casa cuentan" />
       </div>
       <div className="form-card">
-        <label><span>Pasos de hoy</span><input type="number" value={state.steps} onChange={(event) => setState((current) => ({ ...current, steps: Number(event.target.value) }))} /></label>
-        <label><span>Tipo de entrenamiento</span><select value={state.workout} onChange={(event) => setState((current) => ({ ...current, workout: event.target.value as DailyState['workout'] }))}><option value="gym">Gym</option><option value="casa">Casa</option><option value="caminar">Caminar</option><option value="descanso">Descanso</option></select></label>
+        <label><span>Pasos de hoy</span><input type="number" value={state.steps} onChange={(event) => setState((current) => ({ ...current, steps: Number(event.target.value) }))} onBlur={hapticClick} /></label>
+        <label><span>Tipo de entrenamiento</span><select value={state.workout} onChange={(event) => { hapticClick(); setState((current) => ({ ...current, workout: event.target.value as DailyState['workout'] })) }}><option value="gym">Gym</option><option value="casa">Casa</option><option value="caminar">Caminar</option><option value="descanso">Descanso</option></select></label>
       </div>
       <InsightCard text="No se persigue la báscula cada día. Se persigue la repetición que cambia el cuerpo." />
     </>
@@ -392,10 +475,10 @@ function MindView({ state, setState, insights }: { state: DailyState; setState: 
         <Metric label="Energía" value={`${state.energy}/5`} helper="Ajusta la carga" />
       </div>
       <div className="form-card sliders">
-        <label><span>Sueño</span><input type="range" min="4" max="9" step="0.5" value={state.sleepHours} onChange={(event) => setState((current) => ({ ...current, sleepHours: Number(event.target.value) }))} /></label>
-        <label><span>Ansiedad</span><input type="range" min="1" max="5" value={state.anxiety} onChange={(event) => setState((current) => ({ ...current, anxiety: Number(event.target.value) }))} /></label>
-        <label><span>Energía</span><input type="range" min="1" max="5" value={state.energy} onChange={(event) => setState((current) => ({ ...current, energy: Number(event.target.value) }))} /></label>
-        <label><span>Fin de trabajo</span><input type="time" value={state.workEnd} onChange={(event) => setState((current) => ({ ...current, workEnd: event.target.value }))} /></label>
+        <label><span>Sueño</span><input type="range" min="4" max="9" step="0.5" value={state.sleepHours} onChange={(event) => setState((current) => ({ ...current, sleepHours: Number(event.target.value) }))} onPointerUp={hapticClick} /></label>
+        <label><span>Ansiedad</span><input type="range" min="1" max="5" value={state.anxiety} onChange={(event) => setState((current) => ({ ...current, anxiety: Number(event.target.value) }))} onPointerUp={hapticClick} /></label>
+        <label><span>Energía</span><input type="range" min="1" max="5" value={state.energy} onChange={(event) => setState((current) => ({ ...current, energy: Number(event.target.value) }))} onPointerUp={hapticClick} /></label>
+        <label><span>Fin de trabajo</span><input type="time" value={state.workEnd} onChange={(event) => setState((current) => ({ ...current, workEnd: event.target.value }))} onBlur={hapticClick} /></label>
       </div>
       <InsightCard text={insights[1] ?? insights[0]} />
       <EmergencyPlan />
@@ -600,7 +683,20 @@ function loadState(): DailyState {
 
 function mergeActivities(saved: Activity[]) {
   const map = new Map([...defaultState.activities, ...saved].map((activity) => [activity.id, activity]))
-  return Array.from(map.values())
+  return sortActivities(Array.from(map.values()))
+}
+
+function sortActivities(activities: Activity[]) {
+  const blockOrder: Record<Block, number> = { mañana: 0, trabajo: 1, tarde: 2, 'post-6': 3, noche: 4 }
+  return [...activities].sort((a, b) => {
+    const blockDiff = blockOrder[a.block] - blockOrder[b.block]
+    if (blockDiff) return blockDiff
+    const timeDiff = (a.time ?? '99:99').localeCompare(b.time ?? '99:99')
+    if (timeDiff) return timeDiff
+    if (a.essential !== b.essential) return a.essential ? -1 : 1
+    if (a.heavyDay !== b.heavyDay) return a.heavyDay ? -1 : 1
+    return a.title.localeCompare(b.title)
+  })
 }
 
 async function persistState(state: DailyState, progress: number, completedCount: number) {
@@ -732,12 +828,44 @@ function average(values: number[]) {
   return filtered.length ? filtered.reduce((sum, value) => sum + value, 0) / filtered.length : 0
 }
 
+function hapticClick() {
+  navigator.vibrate?.(10)
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function getCalendarDays(month: Date) {
+  const first = startOfMonth(month)
+  const startOffset = (first.getDay() + 6) % 7
+  const start = new Date(first)
+  start.setDate(first.getDate() - startOffset)
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start)
+    day.setDate(start.getDate() + index)
+    return day
+  })
+}
+
+function dateToKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
 function formatDate() {
   return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
+}
+
+function formatDateKey(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(year, month - 1, day))
 }
 
 export default App

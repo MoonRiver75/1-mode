@@ -1,0 +1,481 @@
+DESCRIPCION GENERAL
+
+La app esta construida como una aplicacion React + Vite, escrita en TypeScript. Todo el flujo principal vive casi completo dentro de src/App.tsx, y el diseno visual esta en src/App.css.
+
+La app se llama internamente 1 MODE. Su objetivo es funcionar como un sistema diario de rutinas minimas para cuerpo, mente, trabajo e inteligencia artificial. No usa backend externo para guardar datos: guarda la informacion localmente en el dispositivo usando localStorage e IndexedDB.
+
+Tiene una navegacion inferior con pestanas. Cada pestana muestra una ventana o seccion distinta de la app.
+
+Actualmente las ventanas principales son:
+
+- Hoy
+- Ritual / Actividades
+- Cuerpo
+- Mente
+- IA
+- Progreso
+
+
+ESTRUCTURA PRINCIPAL
+
+La app arranca en App.tsx.
+
+El componente principal es App(). Este componente controla:
+
+- La pestana activa.
+- El estado diario del usuario.
+- El historial local.
+- El progreso del dia.
+- Las actividades visibles.
+- Las notificaciones.
+- La navegacion inferior.
+
+El estado principal se llama DailyState y contiene datos como:
+
+- date: fecha del registro actual.
+- completed: actividades completadas.
+- sleepHours: horas de sueno.
+- anxiety: nivel de ansiedad.
+- energy: nivel de energia.
+- workEnd: hora de salida del trabajo.
+- heavyDay: si el dia pesado esta activo.
+- steps: pasos del dia.
+- deepWork: minutos de trabajo profundo.
+- workout: tipo de entrenamiento.
+- wins: tres victorias del dia.
+- rescueProblem: problema pequeno para rescate de IA.
+- activities: lista de actividades.
+- storagePersisted: estado del guardado local.
+- resources: recursos encontrados para IA.
+
+En resumen: guarda la fecha, las actividades completadas, sueno, ansiedad, energia, hora de salida del trabajo, si el dia es pesado, pasos, minutos de trabajo profundo, tipo de entrenamiento, victorias del dia, problema de IA, actividades, estado de guardado y recursos encontrados.
+
+
+VENTANA HOY
+
+La pestana Hoy es la pantalla principal.
+
+Se renderiza con el componente TodayView.
+
+Esta ventana muestra:
+
+- Fecha actual.
+- Porcentaje de progreso del dia.
+- Numero de actividades completadas.
+- Mensaje principal segun si el dia es normal o pesado.
+- Tarjeta de guardado local.
+- Tarjeta de notificaciones.
+- Observacion automatica.
+- Lista de actividades separadas por bloques del dia.
+- Tres victorias diarias.
+- Botones para activar Dia pesado o limpiar el progreso del dia.
+
+Los bloques actuales son:
+
+- Manana.
+- Trabajo.
+- Tarde.
+- Post-6 PM.
+- Noche.
+
+Cada actividad aparece como una fila tocable. Al tocarla, se marca o desmarca como completada.
+
+El componente de cada actividad es ActivityRow.
+
+La actividad muestra:
+
+- Casilla visual de completado.
+- Nombre.
+- Hora si existe.
+- Descripcion.
+- Consejo opcional.
+- Duracion en minutos.
+
+
+VENTANA RITUAL / ACTIVIDADES
+
+La pestana Ritual se renderiza con ActivitiesView.
+
+Esta seccion permite administrar actividades.
+
+Tiene un formulario para crear o editar actividades con estos campos:
+
+- Nombre.
+- Detalle.
+- Bloque del dia.
+- Minutos.
+- Categoria.
+- Hora.
+- Si cuenta en dia pesado.
+
+Las categorias actuales son:
+
+- fitness.
+- ia.
+- sueno.
+- mente.
+- nutricion.
+- trabajo.
+- hobby.
+
+Tambien lista todas las actividades existentes y permite:
+
+- Editar.
+- Borrar.
+
+Problema actual: las actividades se muestran en una lista corrida, no agrupadas visualmente por bloque ni necesariamente ordenadas por hora. Por eso puede sentirse que las opciones estan revueltas.
+
+
+VENTANA CUERPO
+
+La pestana Cuerpo se renderiza con BodyView.
+
+Esta ventana esta enfocada en estado fisico.
+
+Muestra metricas como:
+
+- Pasos actuales.
+- Promedio de pasos.
+- Tipo de entrenamiento.
+
+Tambien permite editar:
+
+- Pasos de hoy.
+- Tipo de entrenamiento.
+
+Las opciones de entrenamiento son:
+
+- Gym.
+- Casa.
+- Caminar.
+- Descanso.
+
+La pantalla termina con una observacion motivacional sobre repeticion y constancia.
+
+
+VENTANA MENTE
+
+La pestana Mente se renderiza con MindView.
+
+Esta seccion mide el estado mental y emocional.
+
+Muestra metricas de:
+
+- Sueno.
+- Ansiedad.
+- Energia.
+
+Permite ajustar con sliders:
+
+- Horas de sueno.
+- Nivel de ansiedad.
+- Nivel de energia.
+- Hora de salida del trabajo.
+
+Tambien muestra:
+
+- Una observacion automatica.
+- Un plan de emergencia para ansiedad/comida emocional.
+
+El plan de emergencia esta definido en emergencyPlan.
+
+Incluye situaciones como:
+
+- Snacks crocantes.
+- Dulce o helado.
+- Comer por estres.
+
+Cada una tiene una accion recomendada y una razon.
+
+
+VENTANA IA
+
+La pestana IA se renderiza con AiView.
+
+Esta seccion esta pensada para aprendizaje tecnico e inteligencia artificial.
+
+Muestra metricas como:
+
+- Minutos de zona profunda.
+- Fuentes disponibles.
+
+Tiene una tarjeta llamada No se por donde empezar, donde el usuario escribe un problema pequeno. Si escribe algo, la app genera pasos simples como:
+
+- Definir la version mas pequena del problema.
+- Abrir editor o libreta.
+- Escribir 5 lineas.
+- Marcar un error, duda o siguiente paso.
+
+Tambien tiene una Biblioteca web gratis.
+
+El usuario puede buscar temas como machine learning agents.
+
+La app intenta traer recursos de:
+
+- GitHub.
+- Hacker News.
+- arXiv.
+
+Esto se hace con estas funciones:
+
+- fetchGitHub().
+- fetchHackerNews().
+- fetchArxiv().
+
+Los recursos encontrados se pueden convertir en actividades. Cuando se convierte un recurso en actividad, se agrega a la rutina como una tarea de IA.
+
+
+VENTANA PROGRESO
+
+La pestana Progreso se renderiza con ProgressView.
+
+Esta seccion muestra el estado general del sistema.
+
+Incluye metricas como:
+
+- Progreso de hoy.
+- Promedio semanal.
+- Promedio de sueno.
+- Si el dia pesado esta activo.
+- Bloque debil.
+- Cantidad de recursos IA.
+
+Tambien muestra:
+
+- Lista de logros.
+- Reglas semanales.
+- Plan de adaptacion progresiva.
+- Observacion automatica.
+
+Las reglas semanales actuales son:
+
+- Cero azucares anadidos antes de las 6 PM.
+- Caminar 15 minutos antes de entrar a casa.
+- Cumplir 5 de 7 dias gana. Si fallas, reinicias sin culpa.
+
+El plan progresivo actual es:
+
+- Semana 1: huevos en desayuno + caminata de 15 min al llegar. Ignora lo demas.
+- Semana 2: anade kit de rescate + cena proteica.
+- Semana 3: anade 1 hora Pomodoro. No mas.
+
+
+ACTIVIDADES INTERNAS
+
+La app trae actividades predefinidas en tres grupos:
+
+- survivalRoutine.
+- scientificRoutine.
+- baseActivities.
+
+survivalRoutine contiene actividades de supervivencia diaria, por ejemplo:
+
+- Respirar sin movil.
+- Vaso de agua preparado.
+- Luz en ventana.
+- Desayuno antiansiedad.
+- Kit de rescate laboral.
+- Caminar antes de entrar.
+- Movil fuera.
+- Dormir si o si.
+
+scientificRoutine contiene actividades mas relacionadas con ritmo circadiano y habitos basados en ciencia, como:
+
+- Levantarse sin snooze.
+- Luz solar directa.
+- Agua con sal.
+- Movilidad dinamica.
+- NSDR o micro-siesta.
+- Luz calida.
+- Respiracion 4-7-8.
+
+baseActivities contiene actividades base de productividad y desarrollo, como:
+
+- IA profunda.
+- La unica tarea.
+- IA como extension.
+- Entreno gym/casa.
+- Tres victorias.
+
+Todas se combinan en el estado inicial:
+
+activities: [...survivalRoutine, ...scientificRoutine, ...baseActivities]
+
+
+MODO DIA PESADO
+
+La app tiene un modo llamado heavyDay.
+
+Cuando esta activo, no muestra todas las actividades, sino solo las actividades marcadas como esenciales o compatibles con dia pesado.
+
+La condicion usada es:
+
+activity.heavyDay || activity.essential
+
+Eso significa que en dias dificiles la app reduce la carga y deja solo lo esencial.
+
+Se puede activar desde:
+
+- Boton superior.
+- Boton dentro de la ventana Hoy.
+
+
+CALCULO DEL PROGRESO
+
+El progreso se calcula segun las actividades visibles.
+
+Primero se cuentan las actividades completadas. Luego se divide entre el total de actividades visibles y se convierte a porcentaje.
+
+Ejemplo:
+
+- Si hay 20 actividades visibles y completas 10, el progreso es 50%.
+- Si esta activo dia pesado, hay menos actividades visibles, por lo que el progreso se calcula sobre esa version reducida.
+
+
+SISTEMA DE OBSERVACIONES
+
+La app genera consejos automaticos con getInsights().
+
+Esta funcion revisa cosas como:
+
+- Sueno bajo.
+- Ansiedad alta.
+- Pocos pasos.
+- Dia pesado activo.
+- Poco trabajo profundo de IA.
+- Progreso semanal bajo.
+- Progreso diario alto.
+
+Dependiendo del caso, muestra una recomendacion concreta.
+
+Ejemplo:
+
+Sueno bajo y ansiedad alta. Activa dia pesado: luz natural, caminata corta, cena simple y brain dump.
+
+
+GUARDADO LOCAL
+
+La app guarda datos de dos maneras.
+
+Primero usa localStorage para guardar el estado actual:
+
+localStorage.setItem('one-mode-state', JSON.stringify(state))
+
+Segundo usa IndexedDB para guardar historial diario:
+
+idbPut('daily-history', entry.date, entry)
+
+El historial se carga con loadHistory().
+
+Actualmente guarda hasta los ultimos 30 registros:
+
+records.sort((a, b) => a.date.localeCompare(b.date)).slice(-30)
+
+Esto ya permite construir un calendario interno sin necesidad de backend.
+
+
+NOTIFICACIONES
+
+La app tiene recordatorios diarios definidos en dailyReminders.
+
+Los recordatorios actuales son:
+
+- 06:00 Buenos dias.
+- 18:00 Hora feliz.
+- 22:30 A dormir.
+
+El usuario puede activar permisos de notificacion.
+
+Si el navegador lo permite, la app programa notificaciones con scheduleDailyNotifications().
+
+Y las muestra usando showDailyNotification().
+
+Si hay service worker disponible, usa registration.showNotification(). Si no, usa new Notification().
+
+
+BARRA INFERIOR
+
+La barra inferior esta definida como un nav con clase bottom-nav.
+
+Su funcion es cambiar entre ventanas.
+
+Actualmente tiene position: fixed, left: 50% y bottom: 16px.
+
+Problema actual: aunque esta en position: fixed, puede comportarse mal en movil porque su contenedor app-shell tiene animaciones con transform. Eso puede hacer que algunos navegadores no la fijen correctamente desde el inicio y que parezca que solo aparece al hacer scroll.
+
+
+DISENO VISUAL
+
+El diseno esta en src/App.css.
+
+La app usa:
+
+- Fondo calido tipo papel.
+- Tarjetas con bordes redondeados.
+- Sombras suaves.
+- Tipografia serif para titulos.
+- Tipografia sans para cuerpo.
+- Tipografia mono para metricas.
+- Modo oscuro automatico usando prefers-color-scheme.
+
+Las fuentes importadas son:
+
+- IBM Plex Mono.
+- Inter.
+- Noto Serif JP.
+
+El diseno tiene componentes visuales como:
+
+- page-card.
+- metric-card.
+- habit-row.
+- form-card.
+- insight-card.
+- bottom-nav.
+- progress-ring.
+
+
+MEJORAS PENDIENTES SEGUN LOS REQUERIMIENTOS
+
+Actualmente la app ya tiene buena base, pero le faltan tres mejoras importantes:
+
+1. Mejor acomodo de opciones.
+
+- Ordenar actividades por hora.
+- Agrupar mejor en la pantalla Ritual.
+- Mostrar primero lo esencial.
+- Evitar listas largas sin estructura.
+
+2. Barra inferior siempre visible.
+
+- Corregir el problema causado por animaciones y transform.
+- Asegurar safe-area en moviles.
+- Evitar que tape contenido.
+
+3. Calendario interno.
+
+- Agregar nueva pestana Calendario.
+- Usar el historial local ya existente.
+- Mostrar dias con progreso.
+- Permitir tocar un dia y ver resumen.
+- Posiblemente permitir cambiar la fecha activa para registrar rutinas de otro dia, si se quiere una version mas avanzada.
+
+
+RESUMEN TECNICO
+
+La app es una SPA en React. No tiene multiples paginas reales; tiene una sola pantalla principal que cambia de contenido segun la pestana activa.
+
+El flujo es:
+
+App
+- Topbar
+- Page Card
+- TodayView
+- ActivitiesView
+- BodyView
+- MindView
+- AiView
+- ProgressView
+- BottomNav
+
+Los datos se mantienen en estado React, se guardan localmente y luego se usan para calcular progreso, historial, observaciones y metricas.

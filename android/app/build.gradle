@@ -18,8 +18,8 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
+            applicationIdSuffix ".kokoro"
+            versionNameSuffix "-kokoro"
         }
         release {
             minifyEnabled false

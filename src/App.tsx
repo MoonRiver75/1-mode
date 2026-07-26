@@ -102,9 +102,9 @@ const progressivePlan = [
 ]
 
 const dailyReminders: DailyReminder[] = [
-  { id: 'morning', time: '06:00', title: 'Buenos días', body: 'Empieza simple: agua, luz natural y una acción mínima.' },
-  { id: 'happy-hour', time: '18:00', title: 'Hora feliz', body: 'Antes de entrar en automático: camina, respira y protege la tarde.' },
-  { id: 'sleep', time: '22:30', title: 'A dormir', body: 'Móvil fuera, luces bajas y descarga mental. Mañana se continúa.' },
+  { id: 'morning', time: '05:30', title: 'Sistema Kokoro', body: 'Agua, baño intestinal, luz, skincare y movimiento. Empieza sin improvisar.' },
+  { id: 'happy-hour', time: '18:00', title: 'Reset Kokoro', body: 'Cierra trabajo, no abras correos y protege la noche.' },
+  { id: 'sleep', time: '22:00', title: 'Dormir Kokoro', body: 'Pantallas fuera, luces bajas y descanso. El sistema se protege durmiendo.' },
 ]
 
 const scientificRoutine: Activity[] = [
@@ -175,6 +175,8 @@ const kokoroSundayRoutine: Activity[] = [
 
 const kokoroRoutine = [...kokoroWeekdayRoutine, ...kokoroSundayRoutine]
 
+const legacyActivityIds = new Set([...survivalRoutine, ...scientificRoutine, ...baseActivities].map((activity) => activity.id))
+
 const kokoroMealPrep = [
   'Comprar avena, chía, linaza, kiwi, papaya, manzana con cáscara y frutos rojos.',
   'Comprar brócoli, espárragos, espinaca, calabacita, zanahoria, pepino y champiñones.',
@@ -213,13 +215,13 @@ const defaultState: DailyState = {
   workout: 'gym',
   wins: ['', '', ''],
   rescueProblem: '',
-  activities: [...survivalRoutine, ...scientificRoutine, ...baseActivities],
+  activities: [],
   storagePersisted: 'desconocido',
   resources: [],
   birthDate: '',
   mainGoal: 'Construir una vida estable con cuerpo, mente e IA.',
   wakeTime: '06:15',
-  sleepTime: '22:45',
+  sleepTime: '22:00',
   currentPriority: 'Cumplir el siguiente paso, no todo el sistema.',
 }
 
@@ -285,7 +287,7 @@ function App() {
     hapticClick()
     setState((current) => ({
       ...current,
-      activities: mergeActivityLists(current.activities, kokoroRoutine),
+      activities: mergeActivityLists(removeLegacyActivities(current.activities), kokoroRoutine),
       mainGoal: 'Salud primero: ejercicio, comida sana, skincare, hidratación e IA aplicada a Project Management.',
       wakeTime: '05:30',
       sleepTime: '22:00',
@@ -908,7 +910,7 @@ function NotificationCard({ status, requestDailyNotifications }: { status: Notif
       <div>
         <p className="caption">Notificaciones</p>
         <p>{notificationText(status)}</p>
-        <small>6:00 Buenos días · 18:00 Hora feliz · 22:30 A dormir</small>
+        <small>5:30 Sistema Kokoro · 18:00 Reset · 22:00 Dormir</small>
       </div>
       <button type="button" onClick={requestDailyNotifications} disabled={status === 'granted' || status === 'unsupported'}>{status === 'granted' ? 'Activas' : 'Activar'}</button>
     </aside>
@@ -938,8 +940,10 @@ function getInsights(state: DailyState, progress: number, deepMinutes: number, h
   if (state.energy <= 2) insights.push('La energía está baja. Reduce la carga, pero conserva la identidad: una acción pequeña también cuenta.')
   if (state.workEnd > '18:45' || state.heavyDay) insights.push('Trabajaste más de lo normal. Día pesado recomendado: solo lo esencial permanece.')
   if (state.steps < 4000) insights.push('Tus pasos están bajos. La medicina mínima de hoy: 10 minutos caminando después de comer.')
-  if (!state.completed['survival-breakfast']) insights.push('La base de supervivencia hoy es el desayuno antiansiedad. Huevos o proteína primero; todo lo demás puede esperar.')
-  if (!state.completed['survival-walk-home'] && state.workEnd >= '18:00') insights.push('No entres directo a casa si vienes ansioso. La caminata de 15 minutos es el interruptor del día.')
+  if (!state.completed['kokoro-fiber-breakfast']) insights.push('La base Kokoro de la mañana es fibra, probiótico y agua. Desayuna antes de entrar en modo trabajo.')
+  if (!state.completed['kokoro-digestive-walk']) insights.push('Protege digestión y glucosa: 10-15 minutos caminando después de comer cambian la tarde.')
+  if (!state.completed['kokoro-skincare-pm']) insights.push('No cierres el día sin skincare PM. Es una señal simple de cuidado y orden.')
+  if (!state.completed['kokoro-sleep']) insights.push('Dormir a las 10 PM es parte central del sistema. Sin sueño, Kokoro no aguanta.')
   if (deepMinutes === 0) insights.push('La IA todavía no recibió atención profunda. Abre editor o papel durante 15 minutos.')
   if (avgProgress && avgProgress < 45) insights.push('La semana muestra demasiada fricción. Borra o reduce actividades; el sistema debe ser inevitable.')
   if (progress >= 80) insights.push('El sistema está respondiendo. Protege este ritmo; no agregues dificultad hoy.')
@@ -984,7 +988,11 @@ function loadState(): DailyState {
 }
 
 function mergeActivities(saved: Activity[]) {
-  return mergeActivityLists(defaultState.activities, saved)
+  return mergeActivityLists(defaultState.activities, removeLegacyActivities(saved))
+}
+
+function removeLegacyActivities(activities: Activity[]) {
+  return activities.filter((activity) => !legacyActivityIds.has(activity.id))
 }
 
 function mergeActivityLists(base: Activity[], incoming: Activity[]) {

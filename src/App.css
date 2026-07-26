@@ -324,7 +324,7 @@ h2 {
 .soft-copy { margin: 14px 0 0; color: var(--ink-soft); line-height: 1.85; }
 .empty-copy { margin: 10px 0; color: var(--ink-soft); font-size: 13px; }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card, .metric-card, .daily-console, .brain-panel {
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card, .metric-card, .daily-console, .brain-panel, .kokoro-loader {
   position: relative;
   margin: 20px 0;
   border: 1px solid color-mix(in srgb, var(--outline) 58%, transparent);
@@ -336,9 +336,9 @@ h2 {
   transition: transform 260ms var(--ease), box-shadow 260ms var(--ease), border-color 260ms var(--ease);
 }
 
-.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card, .daily-console, .brain-panel { padding: 20px; }
+.insight-card, .journal-card, .form-card, .rescue-card, .achievement-list, .storage-card, .notification-card, .resource-card, .emergency-card, .rule-card, .daily-console, .brain-panel, .kokoro-loader { padding: 20px; }
 
-.insight-card::after, .journal-card::after, .form-card::after, .rescue-card::after, .achievement-list::after, .storage-card::after, .notification-card::after, .resource-card::after, .emergency-card::after, .rule-card::after, .metric-card::after, .daily-console::after, .brain-panel::after {
+.insight-card::after, .journal-card::after, .form-card::after, .rescue-card::after, .achievement-list::after, .storage-card::after, .notification-card::after, .resource-card::after, .emergency-card::after, .rule-card::after, .metric-card::after, .daily-console::after, .brain-panel::after, .kokoro-loader::after {
   content: '';
   pointer-events: none;
   position: absolute;
@@ -348,7 +348,7 @@ h2 {
   opacity: 0.7;
 }
 
-.insight-card:hover, .journal-card:hover, .form-card:hover, .rescue-card:hover, .achievement-list:hover, .storage-card:hover, .notification-card:hover, .resource-card:hover, .emergency-card:hover, .rule-card:hover, .metric-card:hover, .daily-console:hover, .brain-panel:hover {
+.insight-card:hover, .journal-card:hover, .form-card:hover, .rescue-card:hover, .achievement-list:hover, .storage-card:hover, .notification-card:hover, .resource-card:hover, .emergency-card:hover, .rule-card:hover, .metric-card:hover, .daily-console:hover, .brain-panel:hover, .kokoro-loader:hover {
   border-color: color-mix(in srgb, var(--primary-warm) 34%, var(--outline));
   box-shadow: var(--shadow-paper);
   transform: translateY(-3px);
@@ -397,6 +397,19 @@ h2 {
 .quick-add-button:active { transform: translateY(2px); box-shadow: var(--shadow-inset); }
 .quick-task-card { border-color: color-mix(in srgb, var(--primary-warm) 54%, var(--outline)); }
 .status-strip { margin: 20px 0 26px; }
+.success-copy { margin: 12px 0 0; color: var(--led); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+
+.kokoro-loader {
+  display: grid;
+  gap: 16px;
+  border-color: color-mix(in srgb, var(--primary-warm) 52%, var(--outline));
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--primary-warm) 16%, transparent), transparent 18rem),
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 82%, white), var(--surface-card));
+}
+
+.kokoro-loader h2 { font-size: clamp(24px, 4vw, 38px); }
+.kokoro-loader .primary-action { margin-top: 0; }
 
 .ritual-block { margin-top: 30px; }
 .ritual-block:nth-of-type(even) { margin-left: 8px; }
@@ -616,7 +629,7 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
 
 .editable-row:hover { background: color-mix(in srgb, var(--primary-warm) 8%, transparent); transform: translateX(2px); }
 
-.module-board, .calendar-panel, .calendar-readout, .brain-board, .knowledge-grid {
+.module-board, .calendar-panel, .calendar-readout, .brain-board, .knowledge-grid, .kokoro-reference {
   position: relative;
   margin: 24px 0;
   padding: 18px;
@@ -627,7 +640,7 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
   box-shadow: var(--shadow-paper);
 }
 
-.module-board::before, .calendar-panel::before, .calendar-readout::before, .brain-board::before, .knowledge-grid::before {
+.module-board::before, .calendar-panel::before, .calendar-readout::before, .brain-board::before, .knowledge-grid::before, .kokoro-reference::before {
   content: '';
   position: absolute;
   inset: 10px;
@@ -700,6 +713,25 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
 .knowledge-grid .metric-card { min-height: 118px; }
 .profile-card { border-color: color-mix(in srgb, var(--gold) 36%, var(--outline)); }
 .brain-modules { margin-top: 28px; }
+
+.kokoro-reference {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kokoro-reference article {
+  position: relative;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--outline) 70%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 52%, transparent);
+  box-shadow: var(--shadow-inset);
+}
+
+.kokoro-reference h2 { margin-bottom: 12px; font-size: clamp(20px, 3vw, 28px); }
+.kokoro-reference p:not(.caption) { margin: 10px 0 0; color: var(--ink-soft); }
+.kokoro-reference p:not(.caption)::before { content: '• '; color: var(--primary-warm); font-weight: 800; }
 
 .module-board-header {
   display: grid;
@@ -929,7 +961,7 @@ textarea { min-height: 106px; resize: vertical; line-height: 1.75; }
   .bottom-nav button { margin-inline: 2px; font-size: 9px; letter-spacing: 0; }
   .calendar-weekdays, .calendar-grid { gap: 5px; }
   .calendar-day { min-height: 52px; border-radius: 12px; }
-  .daily-console, .brain-board, .knowledge-grid { grid-template-columns: 1fr; }
+  .daily-console, .brain-board, .knowledge-grid, .kokoro-reference { grid-template-columns: 1fr; }
   .brain-bridge { grid-template-columns: 1fr auto 1fr; grid-template-rows: auto; }
   .brain-bridge span { width: 100%; height: 2px; min-height: 2px; }
 }

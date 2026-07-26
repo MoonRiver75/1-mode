@@ -3,7 +3,7 @@ import './App.css'
 
 type Tab = 'hoy' | 'tareas' | 'calendario' | 'cerebro' | 'yo' | 'progreso'
 type Block = 'mañana' | 'trabajo' | 'tarde' | 'post-6' | 'noche'
-type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby'
+type Category = 'fitness' | 'ia' | 'sueño' | 'mente' | 'nutrición' | 'trabajo' | 'hobby' | 'skincare' | 'hidratación' | 'digestión' | 'meal-prep' | 'productividad'
 type ResourceSource = 'GitHub' | 'Hacker News' | 'arXiv'
 type NotificationStatus = NotificationPermission | 'unsupported'
 
@@ -20,6 +20,7 @@ type Activity = {
   tip?: string
   custom?: boolean
   date?: string
+  days?: number[]
 }
 
 type Resource = {
@@ -132,6 +133,73 @@ const baseActivities: Activity[] = [
   { id: 'three-wins', block: 'noche', title: 'Tres victorias', detail: 'Cuerpo, trabajo e IA. Una línea basta.', minutes: 5, category: 'mente', essential: true, heavyDay: true, time: '21:45', tip: 'La gratitud por el esfuerzo arraiga identidad.' },
 ]
 
+const categories: Category[] = ['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby', 'skincare', 'hidratación', 'digestión', 'meal-prep', 'productividad']
+
+const kokoroWeekdayRoutine: Activity[] = [
+  { id: 'kokoro-water-bathroom', block: 'mañana', title: 'Agua + baño intestinal', detail: '500 ml de agua y sentarte al baño sin prisa para entrenar el horario.', minutes: 10, category: 'digestión', essential: true, heavyDay: true, time: '05:30', days: [1, 2, 3, 4, 5], tip: 'El intestino aprende por horario: agua, calma y repetición.' },
+  { id: 'kokoro-sun-breath', block: 'mañana', title: 'Sol + respiración 4-6', detail: '5-10 minutos de luz natural y 8 respiraciones lentas.', minutes: 10, category: 'mente', essential: true, heavyDay: true, time: '05:35', days: [1, 2, 3, 4, 5], tip: 'Luz exterior temprano regula energía, sueño y estado de ánimo.' },
+  { id: 'kokoro-skincare-am', block: 'mañana', title: 'Skincare AM FPS 50+', detail: 'Limpieza, vitamina C, hidratante y protector solar.', minutes: 13, category: 'skincare', essential: true, heavyDay: true, time: '05:45', days: [1, 2, 3, 4, 5], tip: 'Ciudad + sol: el FPS es parte de la salud diaria.' },
+  { id: 'kokoro-pack-gym', block: 'mañana', title: 'Mochila gimnasio lista', detail: 'Ropa, tuppers, agua, bloqueador, toalla y cargador.', minutes: 7, category: 'productividad', essential: true, heavyDay: true, time: '05:58', days: [1, 2, 3, 4, 5], tip: 'Por la mañana no se decide: se ejecuta.' },
+  { id: 'kokoro-yoga-pilates', block: 'mañana', title: 'Yoga/Pilates antes del trabajo', detail: '45 minutos mente-cuerpo al 70% de esfuerzo.', minutes: 45, category: 'fitness', essential: true, heavyDay: false, time: '06:10', days: [1, 2, 3, 4, 5], tip: 'Activar no es destruirte. Debes salir con energía.' },
+  { id: 'kokoro-postgym-skincare', block: 'mañana', title: 'Ducha + reaplicar FPS', detail: 'Ducha rápida, cambio y protector solar de nuevo.', minutes: 20, category: 'skincare', essential: true, heavyDay: true, time: '06:55', days: [1, 2, 3, 4, 5], tip: 'Si sudaste, limpia y reaplica.' },
+  { id: 'kokoro-fiber-breakfast', block: 'mañana', title: 'Desayuno fibra/probiótico', detail: 'Overnight oats con avena, yogur, chía, linaza, fruta con cáscara o kiwi.', minutes: 20, category: 'digestión', essential: true, heavyDay: true, time: '07:15', days: [1, 2, 3, 4, 5], tip: 'Fibra + agua + probiótico es el trío anti estreñimiento.' },
+  { id: 'kokoro-ceo-start', block: 'trabajo', title: 'Arranque CEO + Eisenhower', detail: 'Clasifica urgente/importante, bloquea agenda y define la tarea que hace valer el día.', minutes: 15, category: 'productividad', essential: true, heavyDay: true, time: '08:30', days: [1, 2, 3, 4, 5], tip: 'Toda reunión termina con responsable, fecha y siguiente acción.' },
+  { id: 'kokoro-critical-pm', block: 'trabajo', title: 'Bloque crítico PM Telco', detail: 'KPIs, agentes TV, capacitación, escalaciones y bloqueos operativos.', minutes: 75, category: 'trabajo', essential: true, heavyDay: false, time: '08:45', days: [1, 2, 3, 4, 5], tip: 'Aquí va lo que exige cabeza fresca.' },
+  { id: 'kokoro-active-pause-1', block: 'trabajo', title: 'Pausa activa + agua', detail: '250 ml de agua, cuello, hombros, espalda y 2 minutos caminando.', minutes: 10, category: 'hidratación', essential: true, heavyDay: true, time: '10:00', days: [1, 2, 3, 4, 5], tip: 'Pausas cada 90 minutos sostienen energía.' },
+  { id: 'kokoro-ai-study-work', block: 'trabajo', title: 'Estudio IA PM #1', detail: '45 min no negociables: Copilot, Jira, Confluence, automatización o prompts PM.', minutes: 45, category: 'ia', essential: true, heavyDay: false, time: '10:10', days: [1, 2, 3, 4, 5], tip: 'Output: 1 nota, 1 prompt, 1 aplicación para Megacable.' },
+  { id: 'kokoro-fiber-snack-1', block: 'trabajo', title: 'Merienda fibra #1', detail: 'Kiwi/yogur, manzana con cáscara/almendras, papaya/chía o hummus/zanahoria.', minutes: 15, category: 'digestión', essential: true, heavyDay: true, time: '10:55', days: [1, 2, 3, 4, 5], tip: 'No llegar vacío al almuerzo evita comer pesado.' },
+  { id: 'kokoro-light-lunch', block: 'trabajo', title: 'Almuerzo estratégico', detail: 'Proteína magra, carbo complejo moderado, verduras cocidas/crudas y aceite de oliva.', minutes: 40, category: 'nutrición', essential: true, heavyDay: true, time: '12:30', days: [1, 2, 3, 4, 5], tip: 'Evita fritos, refresco y comida corrida pesada.' },
+  { id: 'kokoro-digestive-walk', block: 'trabajo', title: 'Caminata digestiva', detail: '15 minutos después de comer para glucosa, digestión y motilidad intestinal.', minutes: 15, category: 'digestión', essential: true, heavyDay: true, time: '13:10', days: [1, 2, 3, 4, 5], tip: 'Si no puedes salir, camina pasillos o escaleras.' },
+  { id: 'kokoro-admin-block', block: 'tarde', title: 'Bloque administrativo', detail: 'Correos, reportes, seguimiento de capacitación, asistencia y documentación.', minutes: 95, category: 'trabajo', essential: false, heavyDay: false, time: '13:25', days: [1, 2, 3, 4, 5], tip: 'Deja tareas profundas fuera del bajón.' },
+  { id: 'kokoro-anti-crash', block: 'tarde', title: 'Protocolo anti bajón', detail: 'Agua, snack proteína/fibra, respiración 4-6 y 10 sentadillas lentas.', minutes: 15, category: 'mente', essential: true, heavyDay: true, time: '15:00', days: [1, 2, 3, 4, 5], tip: 'Cuando llegue el bajón, no improvisar.' },
+  { id: 'kokoro-followup-block', block: 'tarde', title: 'Seguimiento operativo', detail: 'Cerrar pendientes, revisar agentes, escalar lo necesario y preparar entregables.', minutes: 90, category: 'trabajo', essential: true, heavyDay: false, time: '15:15', days: [1, 2, 3, 4, 5], tip: 'Si toma menos de 2 minutos, hazlo. Si no, agenda.' },
+  { id: 'kokoro-work-shutdown', block: 'post-6', title: 'Shutdown laboral', detail: 'Primera tarea de mañana, cerrar correo/laptop y salir sin abrir frentes nuevos.', minutes: 20, category: 'productividad', essential: true, heavyDay: true, time: '17:40', days: [1, 2, 3, 4, 5], tip: 'El trabajo queda estacionado. Mañana continúa.' },
+  { id: 'kokoro-commute-reset', block: 'post-6', title: 'Traslado sin correos', detail: 'Música ligera, silencio o respiración 4-6. No responder trabajo.', minutes: 40, category: 'mente', essential: true, heavyDay: true, time: '18:00', days: [1, 2, 3, 4, 5], tip: 'La transición evita que el trabajo invada la noche.' },
+  { id: 'kokoro-light-dinner', block: 'noche', title: 'Cena ligera alta en fibra', detail: 'Sopa/ensalada/bowl con proteína, verduras y chía/aceite de oliva si aplica.', minutes: 30, category: 'digestión', essential: true, heavyDay: true, time: '18:55', days: [1, 2, 3, 4, 5], tip: 'Cenar antes de las 8 PM protege digestión y sueño.' },
+  { id: 'kokoro-pack-tomorrow', block: 'noche', title: 'Preparar mañana', detail: 'Ropa gym, ropa trabajo, tuppers, agua, bloqueador, toalla, cargador y audífonos.', minutes: 15, category: 'productividad', essential: true, heavyDay: true, time: '19:25', days: [1, 2, 3, 4, 5], tip: 'Este bloque protege el entrenamiento de mañana.' },
+  { id: 'kokoro-ai-study-home', block: 'noche', title: 'Estudio IA PM #2', detail: 'Pomodoro 25/5/15: curso, proyecto personal, lectura técnica o aplicación al trabajo.', minutes: 45, category: 'ia', essential: true, heavyDay: false, time: '19:40', days: [1, 2, 3, 4, 5], tip: 'Output: 1 aprendizaje, 1 aplicación, 1 siguiente paso.' },
+  { id: 'kokoro-skincare-pm', block: 'noche', title: 'Skincare PM completo', detail: 'Doble limpieza, tónico, sérum, hidratante y contorno opcional.', minutes: 20, category: 'skincare', essential: true, heavyDay: true, time: '20:25', days: [1, 2, 3, 4, 5], tip: 'Retinol lunes/jueves; niacinamida los demás días.' },
+  { id: 'kokoro-journal-breath', block: 'noche', title: 'Diario + respiración', detail: '3 cosas buenas, 1 mejora, 1 pendiente, 1 cosa que soltar y 5 min respiración.', minutes: 15, category: 'mente', essential: true, heavyDay: true, time: '21:10', days: [1, 2, 3, 4, 5], tip: 'Vaciar la mente es parte del descanso.' },
+  { id: 'kokoro-screens-off', block: 'noche', title: 'Pantallas fuera', detail: 'Celular fuera de cama, no molestar, luz baja y habitación fresca.', minutes: 5, category: 'sueño', essential: true, heavyDay: true, time: '21:25', days: [1, 2, 3, 4, 5], tip: 'Dormir antes de las 10 protege todo el sistema.' },
+  { id: 'kokoro-sleep', block: 'noche', title: 'Dormir 10 PM', detail: 'Luces apagadas. Objetivo: 7.5-8 horas.', minutes: 480, category: 'sueño', essential: true, heavyDay: true, time: '22:00', days: [1, 2, 3, 4, 5], tip: 'Sin sueño no hay rutina estricta que aguante.' },
+]
+
+const kokoroSundayRoutine: Activity[] = [
+  { id: 'kokoro-sunday-move', block: 'mañana', title: 'Movimiento suave domingo', detail: 'Yoga, caminata o estiramientos 20-40 minutos.', minutes: 40, category: 'fitness', essential: false, heavyDay: false, time: '08:00', days: [0], tip: 'Mantén el hábito sin exigir ritmo laboral.' },
+  { id: 'kokoro-sunday-fiber-breakfast', block: 'mañana', title: 'Desayuno alto en fibra', detail: 'Avena, chía, fruta con cáscara, yogur natural o papaya.', minutes: 30, category: 'digestión', essential: true, heavyDay: true, time: '09:00', days: [0], tip: 'Domingo también cuida digestión.' },
+  { id: 'kokoro-meal-prep', block: 'trabajo', title: 'Meal prep 2 horas', detail: 'Preparar desayunos, almuerzos, meriendas y cenas base de lunes a viernes.', minutes: 120, category: 'meal-prep', essential: true, heavyDay: true, time: '10:00', days: [0], tip: 'La semana saludable se gana el domingo.' },
+  { id: 'kokoro-sunday-ai', block: 'tarde', title: 'Estudio IA semanal', detail: '1 hora: revisar tema semanal y definir mini-proyecto aplicable a PM Telco.', minutes: 60, category: 'ia', essential: false, heavyDay: false, time: '17:00', days: [0], tip: 'Cierra con 1 entregable pequeño.' },
+  { id: 'kokoro-week-review', block: 'post-6', title: 'Revisión semanal', detail: 'Agenda, prioridades, pendientes PM, ropa y tuppers del lunes.', minutes: 30, category: 'productividad', essential: true, heavyDay: true, time: '18:30', days: [0], tip: 'Lunes no debe empezar en modo persecución.' },
+  { id: 'kokoro-sunday-sleep', block: 'noche', title: 'Dormir temprano domingo', detail: 'Pantallas fuera 9:30 PM y dormir 10 PM.', minutes: 480, category: 'sueño', essential: true, heavyDay: true, time: '22:00', days: [0], tip: 'El lunes se protege desde domingo.' },
+]
+
+const kokoroRoutine = [...kokoroWeekdayRoutine, ...kokoroSundayRoutine]
+
+const kokoroMealPrep = [
+  'Comprar avena, chía, linaza, kiwi, papaya, manzana con cáscara y frutos rojos.',
+  'Comprar brócoli, espárragos, espinaca, calabacita, zanahoria, pepino y champiñones.',
+  'Preparar proteína magra: pollo, pavo, huevo, atún, salmón, tofu o yogur natural.',
+  'Cocer quinoa/arroz integral/camote y mantener carbohidrato moderado en tuppers.',
+  'Armar 5 desayunos overnight oats, 5 almuerzos, 5 meriendas y cenas base ligeras.',
+]
+
+const kokoroSkincare = [
+  'AM: limpieza suave, vitamina C, hidratante y protector solar FPS 50+.',
+  'Post-gym: limpiar si sudaste y reaplicar FPS 50+.',
+  'PM: agua micelar o bálsamo, limpiador suave, tónico, sérum e hidratante.',
+  'Retinol lunes y jueves; niacinamida o hidratante los demás días.',
+  'Doble limpieza diaria si hubo contaminación, sudor o protector solar.',
+]
+
+const kokoroAiPlan = [
+  'Semana 1: minutas, resúmenes y follow-ups con IA.',
+  'Semana 2: Copilot, ChatGPT y prompts para Project Management.',
+  'Semana 3: automatización de reportes y dashboards.',
+  'Semana 4: IA para capacitación de agentes TV.',
+  'Semana 5: análisis de tickets, quejas y voz del cliente.',
+  'Semana 6: AI-driven Project Management aplicado a Telco.',
+]
+
 const defaultState: DailyState = {
   date: todayKey(),
   completed: {},
@@ -213,6 +281,19 @@ function App() {
     }))
   }
 
+  function loadKokoroRoutine() {
+    hapticClick()
+    setState((current) => ({
+      ...current,
+      activities: mergeActivityLists(current.activities, kokoroRoutine),
+      mainGoal: 'Salud primero: ejercicio, comida sana, skincare, hidratación e IA aplicada a Project Management.',
+      wakeTime: '05:30',
+      sleepTime: '22:00',
+      currentPriority: 'Cumplir la ruta Kokoro del día sin improvisar.',
+      workEnd: '18:00',
+    }))
+  }
+
   function changeActiveDate(date: string) {
     hapticClick()
     const savedEntry = history.find((entry) => entry.date === date)
@@ -278,7 +359,7 @@ function App() {
 
       <section className="page-card page-entry" key={activeTab}>
         {activeTab === 'hoy' && <TodayView completedCount={completedCount} progress={progress} state={state} activities={visibleActivities} insights={insights} onToggle={toggleActivity} setState={setState} updateWin={updateWin} upsertActivity={upsertActivity} changeActiveDate={changeActiveDate} />}
-        {activeTab === 'tareas' && <TasksView activeDate={state.date} activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} />}
+        {activeTab === 'tareas' && <TasksView activeDate={state.date} activities={state.activities} upsertActivity={upsertActivity} deleteActivity={deleteActivity} loadKokoroRoutine={loadKokoroRoutine} />}
         {activeTab === 'calendario' && <CalendarView history={history} state={state} progress={progress} completedCount={completedCount} changeActiveDate={changeActiveDate} />}
         {activeTab === 'cerebro' && <BrainView state={state} setState={setState} history={history} progress={progress} completedCount={completedCount} deepMinutes={deepMinutes} insights={insights} />}
         {activeTab === 'yo' && <YouView state={state} setState={setState} history={history} requestPersistentStorage={requestPersistentStorage} notificationStatus={notificationStatus} requestDailyNotifications={requestDailyNotifications} />}
@@ -389,7 +470,7 @@ function QuickTaskForm({ activeDate, upsertActivity }: { activeDate: string; ups
       </div>
       <div className="two-columns">
         <label><span>Tipo</span><select value={scope} onChange={(event) => setScope(event.target.value as 'dia' | 'rutina')}><option value="dia">Solo este día</option><option value="rutina">Rutina permanente</option></select></label>
-        <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{(['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby'] as Category[]).map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+        <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
       </div>
       <label className="inline-check"><input type="checkbox" checked={draft.heavyDay} onChange={(event) => setDraft({ ...draft, heavyDay: event.target.checked })} /> Aparece en día pesado</label>
       {error && <p className="error-copy">{error}</p>}
@@ -401,11 +482,13 @@ function QuickTaskForm({ activeDate, upsertActivity }: { activeDate: string; ups
   )
 }
 
-function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: { activeDate: string; activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void }) {
+function TasksView({ activeDate, activities, upsertActivity, deleteActivity, loadKokoroRoutine }: { activeDate: string; activities: Activity[]; upsertActivity: (activity: Activity) => void; deleteActivity: (id: string) => void; loadKokoroRoutine: () => void }) {
   const [draft, setDraft] = useState<Activity>(newActivity(activeDate))
   const [scope, setScope] = useState<'dia' | 'rutina'>('rutina')
   const [error, setError] = useState('')
+  const [loadedMessage, setLoadedMessage] = useState('')
   const sortedActivities = sortActivities(activities)
+  const kokoroLoaded = kokoroRoutine.every((activity) => activities.some((item) => item.id === activity.id))
 
   function save() {
     if (!draft.title.trim()) {
@@ -421,6 +504,16 @@ function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: {
   return (
     <>
       <SectionTitle caption="Tareas" title="Organiza tus acciones" />
+      <section className="kokoro-loader">
+        <div>
+          <p className="caption">Plan Kokoro</p>
+          <h2>Rutina estricta salud + PM Telco</h2>
+          <p className="soft-copy">Carga la ruta diaria con ejercicio antes del trabajo, comida anti estreñimiento, skincare, hidratación 3L, estudio IA PM y descanso 10 PM.</p>
+        </div>
+        <button className="primary-action" type="button" onClick={() => { loadKokoroRoutine(); setLoadedMessage('Rutina Kokoro cargada sin duplicar tareas.') }}>{kokoroLoaded ? 'Recargar Kokoro' : 'Cargar Rutina Kokoro'}</button>
+        {(loadedMessage || kokoroLoaded) && <p className="success-copy">{loadedMessage || 'Rutina Kokoro activa.'}</p>}
+      </section>
+
       <section className="form-card">
         <p className="caption">Nueva tarea</p>
         <label><span>Nombre</span><input value={draft.title} placeholder="Ej. Estudiar embeddings" onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
@@ -430,7 +523,7 @@ function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: {
           <label><span>Minutos</span><input type="number" min="1" value={draft.minutes} onChange={(event) => setDraft({ ...draft, minutes: Number(event.target.value) })} /></label>
         </div>
         <div className="two-columns">
-          <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{(['fitness', 'ia', 'sueño', 'mente', 'nutrición', 'trabajo', 'hobby'] as Category[]).map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+          <label><span>Categoría</span><select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Category })}>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
           <label><span>Hora</span><input type="time" value={draft.time ?? ''} onChange={(event) => setDraft({ ...draft, time: event.target.value })} /></label>
         </div>
         <label><span>Tipo</span><select value={scope} onChange={(event) => setScope(event.target.value as 'dia' | 'rutina')}><option value="rutina">Rutina permanente</option><option value="dia">Solo {formatDateKey(activeDate)}</option></select></label>
@@ -443,6 +536,8 @@ function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: {
         <p className="caption">Plantillas activas</p>
         <p className="soft-copy">Modo Supervivencia está primero: desayuno simple, kit de rescate, caminata antes de entrar a casa y sueño sin móvil. La regla: hábitos de uno en uno.</p>
       </section>
+
+      <KokoroReference />
 
       {(['mañana', 'trabajo', 'tarde', 'post-6', 'noche'] as Block[]).map((block) => {
         const blockActivities = sortedActivities.filter((activity) => activity.block === block)
@@ -463,6 +558,33 @@ function TasksView({ activeDate, activities, upsertActivity, deleteActivity }: {
         )
       })}
     </>
+  )
+}
+
+function KokoroReference() {
+  return (
+    <section className="kokoro-reference">
+      <article>
+        <p className="caption">Meal Prep Domingo</p>
+        <h2>2 horas que compran la semana</h2>
+        {kokoroMealPrep.map((item) => <p key={item}>{item}</p>)}
+      </article>
+      <article>
+        <p className="caption">Skincare</p>
+        <h2>Ciudad + sol + disciplina</h2>
+        {kokoroSkincare.map((item) => <p key={item}>{item}</p>)}
+      </article>
+      <article>
+        <p className="caption">IA para PM Telco</p>
+        <h2>Aprendizaje aplicable</h2>
+        {kokoroAiPlan.map((item) => <p key={item}>{item}</p>)}
+      </article>
+      <article>
+        <p className="caption">Hidratación 3L</p>
+        <h2>Agua por horario</h2>
+        {['500 ml al despertar.', '250 ml en cada pausa de trabajo.', '250 ml con protocolo anti bajón.', '250 ml al llegar a casa.', 'Evitar llegar a la noche con déficit de agua.'].map((item) => <p key={item}>{item}</p>)}
+      </article>
+    </section>
   )
 }
 
@@ -862,7 +984,11 @@ function loadState(): DailyState {
 }
 
 function mergeActivities(saved: Activity[]) {
-  const map = new Map([...defaultState.activities, ...saved].map((activity) => [activity.id, activity]))
+  return mergeActivityLists(defaultState.activities, saved)
+}
+
+function mergeActivityLists(base: Activity[], incoming: Activity[]) {
+  const map = new Map([...base, ...incoming].map((activity) => [activity.id, activity]))
   return sortActivities(Array.from(map.values()))
 }
 
@@ -880,10 +1006,12 @@ function sortActivities(activities: Activity[]) {
 }
 
 function filterActivitiesForDate(activities: Activity[], date: string, heavyDay: boolean) {
+  const dayOfWeek = parseDateKey(date).getDay()
   return activities.filter((activity) => {
     const belongsToDate = !activity.date || activity.date === date
+    const belongsToWeekday = !activity.days || activity.days.includes(dayOfWeek)
     const belongsToLoad = !heavyDay || activity.heavyDay || activity.essential
-    return belongsToDate && belongsToLoad
+    return belongsToDate && belongsToWeekday && belongsToLoad
   })
 }
 
